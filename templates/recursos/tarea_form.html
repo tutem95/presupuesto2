@@ -20,4 +20,34 @@
         </form>
     </section>
 </main>
+
+{% if subrubros_by_rubro %}
+{{ subrubros_by_rubro|json_script:"subrubros-data" }}
+<script>
+(function() {
+    var el = document.getElementById("subrubros-data");
+    var data = el ? JSON.parse(el.textContent) : {};
+    var rubroSelect = document.getElementById("id_rubro");
+    var subrubroSelect = document.getElementById("id_subrubro");
+    if (!rubroSelect || !subrubroSelect) return;
+
+    function actualizarSubrubros() {
+        var rubroId = rubroSelect.value;
+        var opts = data[rubroId] || [];
+        var valorActual = subrubroSelect.value;
+        subrubroSelect.innerHTML = '<option value="">---------</option>';
+        opts.forEach(function(s) {
+            var opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.nombre;
+            if (String(s.id) === String(valorActual)) opt.selected = true;
+            subrubroSelect.appendChild(opt);
+        });
+    }
+
+    rubroSelect.addEventListener("change", actualizarSubrubros);
+    actualizarSubrubros();
+})();
+</script>
+{% endif %}
 {% endblock %}

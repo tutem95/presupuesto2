@@ -9,6 +9,9 @@ __pycache__/
 # Base de datos
 db.sqlite3
 
+# Archivos estáticos recolectados (collectstatic)
+staticfiles/
+
 # Variables de entorno
 .env
 

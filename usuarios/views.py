@@ -36,20 +36,27 @@ def company_select(request):
     if not request.user.is_authenticated:
         return redirect("usuarios:login")
 
-    memberships = (
+    memberships_qs = (
         CompanyMembership.objects.filter(user=request.user)
         .select_related("company")
+        .prefetch_related("membership_sections", "membership_sections__section")
         .order_by("company__nombre")
     )
+    # Solo empresas donde tiene acceso (admin o al menos una sección)
+    memberships = [m for m in memberships_qs if m.is_admin or m.membership_sections.exists()]
 
-    if not memberships.exists():
+    if not memberships:
         return redirect("usuarios:no_company")
 
     if request.method == "POST":
         company_id = request.POST.get("company_id")
-        if company_id and memberships.filter(company_id=company_id).exists():
-            request.session["company_id"] = int(company_id)
-            return redirect("general:dashboard")
+        valid_ids = [m.company_id for m in memberships]
+        try:
+            if company_id and int(company_id) in valid_ids:
+                request.session["company_id"] = int(company_id)
+                return redirect("general:dashboard")
+        except (ValueError, TypeError):
+            pass
 
     return render(
         request,
@@ -63,3 +70,12 @@ def no_company(request):
     if not request.user.is_authenticated:
         return redirect("usuarios:login")
     return render(request, "usuarios/no_company.html")
+
+
+def no_section_access(request):
+    """El usuario no tiene acceso a esta sección."""
+    if not request.user.is_authenticated:
+        return redirect("usuarios:login")
+    if not request.company:
+        return redirect("usuarios:company_select")
+    return render(request, "usuarios/no_section_access.html")

@@ -7,6 +7,9 @@ app_name = "presupuestos"
 urlpatterns = [
     path("", views.presupuesto_list, name="presupuesto_list"),
     path("nuevo/", views.presupuesto_create, name="presupuesto_create"),
+    path("<int:pk>/editar/", views.presupuesto_edit, name="presupuesto_edit"),
+    path("<int:pk>/eliminar/", views.presupuesto_delete, name="presupuesto_delete"),
+    path("<int:pk>/toggle-activo/", views.presupuesto_toggle_activo, name="presupuesto_toggle_activo"),
     path("<int:pk>/rubros/", views.presupuesto_rubros, name="presupuesto_rubros"),
     path(
         "<int:pk>/rubros/<int:rubro_pk>/subrubros/",

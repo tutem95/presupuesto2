@@ -100,6 +100,7 @@ def material_list(request):
                 pk__in=ids_en_hoja
             ).select_related("proveedor", "tipo", "categoria", "unidad_de_venta")
 
+        lote = Lote.objects.filter(hoja_materiales=hoja_seleccionada).first()
         return render(
             request,
             "recursos/material_list.html",
@@ -112,6 +113,7 @@ def material_list(request):
                 "editing_hoja": editing_hoja,
                 "form_hoja_detalle": form_hoja_detalle,
                 "materiales_no_en_hoja": materiales_no_en_hoja,
+                "lote": lote,
             },
         )
 
@@ -137,6 +139,7 @@ def material_list(request):
             "hojas": hojas,
             "hoja_seleccionada": hoja_seleccionada,
             "modo_hoja": modo_hoja,
+            "lote": None,
         },
     )
 
@@ -185,26 +188,46 @@ def material_delete(request, pk):
 @login_required
 def material_bulk_update(request):
     """
-    Actualiza el precio_unidad_venta de los materiales seleccionados por un porcentaje.
+    Actualiza el precio_unidad_venta por un porcentaje.
+    Sin hoja: materiales del catálogo. Con hoja: detalles de la hoja (HojaPrecioMaterial).
     """
     if request.method != "POST":
         return redirect("recursos:material_list")
 
     ids = request.POST.getlist("selected_ids")
     porcentaje_str = request.POST.get("porcentaje") or "0"
+    hoja_id = request.POST.get("hoja")
 
     if not ids:
-        return redirect("recursos:material_list")
+        redirect_url = reverse("recursos:material_list")
+        if hoja_id:
+            redirect_url += f"?hoja={hoja_id}"
+        return redirect(redirect_url)
 
     try:
         porcentaje = Decimal(porcentaje_str)
     except InvalidOperation:
-        return redirect("recursos:material_list")
+        redirect_url = reverse("recursos:material_list")
+        if hoja_id:
+            redirect_url += f"?hoja={hoja_id}"
+        return redirect(redirect_url)
 
-    queryset = Material.objects.filter(company=request.company, pk__in=ids)
-    Material.actualizar_precios_por_porcentaje(queryset, porcentaje)
+    if hoja_id:
+        hoja = get_object_or_404(HojaPrecios, pk=hoja_id, company=request.company)
+        queryset = HojaPrecioMaterial.objects.filter(
+            hoja=hoja, pk__in=ids
+        )
+        from django.db.models import F
+        factor = Decimal("1") + (porcentaje / Decimal("100"))
+        queryset.update(precio_unidad_venta=F("precio_unidad_venta") * factor)
+    else:
+        queryset = Material.objects.filter(company=request.company, pk__in=ids)
+        Material.actualizar_precios_por_porcentaje(queryset, porcentaje)
 
-    return redirect("recursos:material_list")
+    redirect_url = reverse("recursos:material_list")
+    if hoja_id:
+        redirect_url += f"?hoja={hoja_id}"
+    return redirect(redirect_url)
 
 
 @login_required
@@ -377,6 +400,7 @@ def mano_de_obra_list(request):
                 "rubro", "subrubro", "equipo", "ref_equipo", "unidad_de_venta"
             )
 
+        lote = Lote.objects.filter(hoja_mano_de_obra=hoja_seleccionada).first()
         return render(
             request,
             "recursos/mano_de_obra_list.html",
@@ -389,6 +413,7 @@ def mano_de_obra_list(request):
                 "editing_hoja": editing_hoja,
                 "form_hoja_detalle": form_hoja_detalle,
                 "items_no_en_hoja": items_no_en_hoja,
+                "lote": lote,
             },
         )
 
@@ -415,6 +440,7 @@ def mano_de_obra_list(request):
             "hoja_seleccionada": hoja_seleccionada,
             "modo_hoja": modo_hoja,
             "editing": None,
+            "lote": None,
         },
     )
 
@@ -447,6 +473,7 @@ def mano_de_obra_edit(request, pk):
             "hojas": hojas,
             "hoja_seleccionada": None,
             "modo_hoja": False,
+            "lote": None,
         },
     )
 
@@ -466,25 +493,45 @@ def mano_de_obra_delete(request, pk):
 
 @login_required
 def mano_de_obra_bulk_update(request):
-    """Actualiza precio_unidad_venta de mano de obra seleccionada por porcentaje."""
+    """
+    Actualiza precio_unidad_venta por porcentaje.
+    Sin hoja: mano de obra del catálogo. Con hoja: detalles de la hoja (HojaPrecioManoDeObra).
+    """
     if request.method != "POST":
         return redirect("recursos:mano_de_obra_list")
 
     ids = request.POST.getlist("selected_ids")
     porcentaje_str = request.POST.get("porcentaje") or "0"
+    hoja_id = request.POST.get("hoja")
 
     if not ids:
-        return redirect("recursos:mano_de_obra_list")
+        redirect_url = reverse("recursos:mano_de_obra_list")
+        if hoja_id:
+            redirect_url += f"?hoja={hoja_id}"
+        return redirect(redirect_url)
 
     try:
         porcentaje = Decimal(porcentaje_str)
     except InvalidOperation:
-        return redirect("recursos:mano_de_obra_list")
+        redirect_url = reverse("recursos:mano_de_obra_list")
+        if hoja_id:
+            redirect_url += f"?hoja={hoja_id}"
+        return redirect(redirect_url)
 
-    queryset = ManoDeObra.objects.filter(company=request.company, pk__in=ids)
-    ManoDeObra.actualizar_precios_por_porcentaje(queryset, porcentaje)
+    if hoja_id:
+        hoja = get_object_or_404(HojaPreciosManoDeObra, pk=hoja_id, company=request.company)
+        queryset = HojaPrecioManoDeObra.objects.filter(hoja=hoja, pk__in=ids)
+        from django.db.models import F
+        factor = Decimal("1") + (porcentaje / Decimal("100"))
+        queryset.update(precio_unidad_venta=F("precio_unidad_venta") * factor)
+    else:
+        queryset = ManoDeObra.objects.filter(company=request.company, pk__in=ids)
+        ManoDeObra.actualizar_precios_por_porcentaje(queryset, porcentaje)
 
-    return redirect("recursos:mano_de_obra_list")
+    redirect_url = reverse("recursos:mano_de_obra_list")
+    if hoja_id:
+        redirect_url += f"?hoja={hoja_id}"
+    return redirect(redirect_url)
 
 
 @login_required
@@ -559,10 +606,11 @@ def hoja_mano_de_obra_detalle(request, pk):
         "mano_de_obra__ref_equipo",
         "mano_de_obra__unidad_de_venta",
     ).all()
+    lote = Lote.objects.filter(hoja_mano_de_obra=hoja).first()
     return render(
         request,
         "recursos/hoja_mano_de_obra_detalle.html",
-        {"hoja": hoja, "detalles": detalles},
+        {"hoja": hoja, "detalles": detalles, "lote": lote},
     )
 
 
@@ -624,6 +672,7 @@ def mezcla_list(request):
     else:
         form = MezclaForm(request=request, initial={"hoja": hoja_seleccionada})
 
+    lote = Lote.objects.filter(hoja_materiales=hoja_seleccionada).first() if hoja_seleccionada else None
     return render(
         request,
         "recursos/mezcla_list.html",
@@ -632,6 +681,7 @@ def mezcla_list(request):
             "form": form,
             "hojas": hojas,
             "hoja_seleccionada": hoja_seleccionada,
+            "lote": lote,
         },
     )
 
@@ -739,6 +789,11 @@ def _copy_hoja_materiales_desde_origen(hoja_origen, nombre, company):
     return hoja
 
 
+def _create_hoja_materiales_vacia(nombre, company):
+    """Crea una hoja de materiales vacía (sin copiar)."""
+    return HojaPrecios.objects.create(nombre=nombre, company=company)
+
+
 def _copy_hoja_mo_desde_origen(hoja_origen, nombre, company):
     """Copia hoja de mano de obra."""
     hoja = HojaPreciosManoDeObra.objects.create(nombre=nombre, company=company)
@@ -761,6 +816,11 @@ def _copy_hoja_mo_desde_origen(hoja_origen, nombre, company):
                 precio_unidad_venta=md.precio_unidad_venta,
             )
     return hoja
+
+
+def _create_hoja_mo_vacia(nombre, company):
+    """Crea una hoja de mano de obra vacía (sin copiar)."""
+    return HojaPreciosManoDeObra.objects.create(nombre=nombre, company=company)
 
 
 def _copy_hoja_subcontratos_desde_origen(hoja_origen, nombre, company):
@@ -787,6 +847,11 @@ def _copy_hoja_subcontratos_desde_origen(hoja_origen, nombre, company):
                 moneda=s.moneda,
             )
     return hoja
+
+
+def _create_hoja_subcontratos_vacia(nombre, company):
+    """Crea una hoja de subcontratos vacía (sin copiar)."""
+    return HojaPreciosSubcontrato.objects.create(nombre=nombre, company=company)
 
 
 def _copy_mezclas_desde_hoja(hoja_origen, hoja_nueva, company):
@@ -844,17 +909,25 @@ def lote_list(request):
     lotes = Lote.objects.filter(company=company).select_related(
         "hoja_materiales", "hoja_mano_de_obra", "hoja_subcontratos"
     ).order_by("-creado_en")
+    return render(request, "recursos/lote_list.html", {"lotes": lotes})
+
+
+@login_required
+def lote_create(request):
+    """Pantalla para agregar nuevo lote. --Sin copiar-- por defecto."""
+    company = request.company
+    lotes = Lote.objects.filter(company=company).order_by("-creado_en")
 
     if request.method == "POST":
         nombre = (request.POST.get("nombre") or "").strip()
-        origen_mat = request.POST.get("origen_materiales")  # "actual" or lote pk
+        origen_mat = request.POST.get("origen_materiales")  # "" o lote pk
         origen_mo = request.POST.get("origen_mo")
         origen_sub = request.POST.get("origen_subcontratos")
         origen_mezclas = request.POST.get("origen_mezclas")
-        origen_maestro = request.POST.get("origen_maestro")  # lote pk only
+        origen_maestro = request.POST.get("origen_maestro")
 
         if not nombre:
-            return redirect("tareas")
+            return redirect("recursos:lote_create")
 
         hoja_mat_origen = None
         hoja_mo_origen = None
@@ -862,24 +935,33 @@ def lote_list(request):
         hoja_mezclas_origen = None
         lote_maestro_origen = None
 
-        if origen_mat and origen_mat != "actual":
+        if origen_mat:
             lote_mat = get_object_or_404(Lote, pk=origen_mat, company=company)
             hoja_mat_origen = lote_mat.hoja_materiales
-        if origen_mo and origen_mo != "actual":
+        if origen_mo:
             lote_mo = get_object_or_404(Lote, pk=origen_mo, company=company)
             hoja_mo_origen = lote_mo.hoja_mano_de_obra
-        if origen_sub and origen_sub != "actual":
+        if origen_sub:
             lote_sub = get_object_or_404(Lote, pk=origen_sub, company=company)
             hoja_sub_origen = lote_sub.hoja_subcontratos
-        if origen_mezclas and origen_mezclas != "actual":
+        if origen_mezclas:
             lote_mez = get_object_or_404(Lote, pk=origen_mezclas, company=company)
             hoja_mezclas_origen = lote_mez.hoja_materiales
         if origen_maestro:
             lote_maestro_origen = get_object_or_404(Lote, pk=origen_maestro, company=company)
 
-        hoja_mat = _copy_hoja_materiales_desde_origen(hoja_mat_origen, nombre, company)
-        hoja_mo = _copy_hoja_mo_desde_origen(hoja_mo_origen, nombre, company)
-        hoja_sub = _copy_hoja_subcontratos_desde_origen(hoja_sub_origen, nombre, company)
+        if hoja_mat_origen:
+            hoja_mat = _copy_hoja_materiales_desde_origen(hoja_mat_origen, nombre, company)
+        else:
+            hoja_mat = _create_hoja_materiales_vacia(nombre, company)
+        if hoja_mo_origen:
+            hoja_mo = _copy_hoja_mo_desde_origen(hoja_mo_origen, nombre, company)
+        else:
+            hoja_mo = _create_hoja_mo_vacia(nombre, company)
+        if hoja_sub_origen:
+            hoja_sub = _copy_hoja_subcontratos_desde_origen(hoja_sub_origen, nombre, company)
+        else:
+            hoja_sub = _create_hoja_subcontratos_vacia(nombre, company)
 
         _copy_mezclas_desde_hoja(hoja_mezclas_origen, hoja_mat, company)
 
@@ -894,7 +976,24 @@ def lote_list(request):
 
         return redirect("tareas")
 
-    return render(request, "recursos/lote_list.html", {"lotes": lotes})
+    return render(request, "recursos/lote_form.html", {"lotes": lotes})
+
+
+@login_required
+def lote_edit(request, pk):
+    """Editar el nombre del lote."""
+    lote = get_object_or_404(Lote, pk=pk, company=request.company)
+    if request.method == "POST":
+        nombre = (request.POST.get("nombre") or "").strip()
+        if nombre:
+            lote.nombre = nombre
+            lote.save()
+            return redirect("recursos:lote_detalle", pk=lote.pk)
+    return render(
+        request,
+        "recursos/lote_edit.html",
+        {"lote": lote},
+    )
 
 
 @login_required
@@ -951,6 +1050,19 @@ def tarea_detalle(request, lote_pk, pk):
     )
 
 
+def _subrubros_by_rubro(company):
+    """Dict rubro_id -> [(id, nombre), ...] para cascada rubro->subrubro."""
+    from general.models import Subrubro
+    subrubros = Subrubro.objects.filter(company=company).select_related("rubro").order_by("rubro__nombre", "nombre")
+    result = {}
+    for s in subrubros:
+        rid = str(s.rubro_id)
+        if rid not in result:
+            result[rid] = []
+        result[rid].append({"id": s.pk, "nombre": s.nombre})
+    return result
+
+
 @login_required
 def tarea_create(request, lote_pk):
     lote = get_object_or_404(Lote, pk=lote_pk, company=request.company)
@@ -965,10 +1077,11 @@ def tarea_create(request, lote_pk):
     else:
         form = TareaForm(request=request)
 
+    subrubros_by_rubro = _subrubros_by_rubro(request.company)
     return render(
         request,
         "recursos/tarea_form.html",
-        {"form": form, "lote": lote, "editing": False},
+        {"form": form, "lote": lote, "editing": False, "subrubros_by_rubro": subrubros_by_rubro},
     )
 
 
@@ -984,10 +1097,11 @@ def tarea_edit(request, lote_pk, pk):
     else:
         form = TareaForm(instance=tarea, request=request)
 
+    subrubros_by_rubro = _subrubros_by_rubro(request.company)
     return render(
         request,
         "recursos/tarea_form.html",
-        {"form": form, "lote": lote, "tarea": tarea, "editing": True},
+        {"form": form, "lote": lote, "tarea": tarea, "editing": True, "subrubros_by_rubro": subrubros_by_rubro},
     )
 
 
@@ -1121,6 +1235,7 @@ def subcontrato_list(request):
                 "rubro", "subrubro", "proveedor", "unidad_de_venta"
             )
 
+        lote = Lote.objects.filter(hoja_subcontratos=hoja_seleccionada).first()
         return render(
             request,
             "recursos/subcontrato_list.html",
@@ -1133,6 +1248,7 @@ def subcontrato_list(request):
                 "editing_hoja": editing_hoja,
                 "form_hoja_detalle": form_hoja_detalle,
                 "subcontratos_no_en_hoja": subcontratos_no_en_hoja,
+                "lote": lote,
             },
         )
 
@@ -1159,6 +1275,7 @@ def subcontrato_list(request):
             "hoja_seleccionada": hoja_seleccionada,
             "modo_hoja": modo_hoja,
             "editing": None,
+            "lote": None,
         },
     )
 
@@ -1191,6 +1308,7 @@ def subcontrato_edit(request, pk):
             "hojas": hojas,
             "hoja_seleccionada": None,
             "modo_hoja": False,
+            "lote": None,
         },
     )
 
@@ -1210,25 +1328,45 @@ def subcontrato_delete(request, pk):
 
 @login_required
 def subcontrato_bulk_update(request):
-    """Actualiza precio_unidad_venta de subcontratos seleccionados por porcentaje."""
+    """
+    Actualiza precio_unidad_venta por porcentaje.
+    Sin hoja: subcontratos del catálogo. Con hoja: detalles de la hoja (HojaPrecioSubcontrato).
+    """
     if request.method != "POST":
         return redirect("recursos:subcontrato_list")
 
     ids = request.POST.getlist("selected_ids")
     porcentaje_str = request.POST.get("porcentaje") or "0"
+    hoja_id = request.POST.get("hoja")
 
     if not ids:
-        return redirect("recursos:subcontrato_list")
+        redirect_url = reverse("recursos:subcontrato_list")
+        if hoja_id:
+            redirect_url += f"?hoja={hoja_id}"
+        return redirect(redirect_url)
 
     try:
         porcentaje = Decimal(porcentaje_str)
     except InvalidOperation:
-        return redirect("recursos:subcontrato_list")
+        redirect_url = reverse("recursos:subcontrato_list")
+        if hoja_id:
+            redirect_url += f"?hoja={hoja_id}"
+        return redirect(redirect_url)
 
-    queryset = Subcontrato.objects.filter(company=request.company, pk__in=ids)
-    Subcontrato.actualizar_precios_por_porcentaje(queryset, porcentaje)
+    if hoja_id:
+        hoja = get_object_or_404(HojaPreciosSubcontrato, pk=hoja_id, company=request.company)
+        queryset = HojaPrecioSubcontrato.objects.filter(hoja=hoja, pk__in=ids)
+        from django.db.models import F
+        factor = Decimal("1") + (porcentaje / Decimal("100"))
+        queryset.update(precio_unidad_venta=F("precio_unidad_venta") * factor)
+    else:
+        queryset = Subcontrato.objects.filter(company=request.company, pk__in=ids)
+        Subcontrato.actualizar_precios_por_porcentaje(queryset, porcentaje)
 
-    return redirect("recursos:subcontrato_list")
+    redirect_url = reverse("recursos:subcontrato_list")
+    if hoja_id:
+        redirect_url += f"?hoja={hoja_id}"
+    return redirect(redirect_url)
 
 
 @login_required
@@ -1305,10 +1443,11 @@ def hoja_subcontrato_detalle(request, pk):
         "subcontrato__proveedor",
         "subcontrato__unidad_de_venta",
     ).all()
+    lote = Lote.objects.filter(hoja_subcontratos=hoja).first()
     return render(
         request,
         "recursos/hoja_subcontrato_detalle.html",
-        {"hoja": hoja, "detalles": detalles},
+        {"hoja": hoja, "detalles": detalles, "lote": lote},
     )
 
 

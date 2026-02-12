@@ -8,7 +8,11 @@
             <h1>Hoja: {{ hoja.nombre }}</h1>
             <p>Detalle de precios de subcontratos en esta hoja.</p>
         </div>
+        {% if lote %}
+        <a class="link link-back" href="{% url 'recursos:lote_detalle' lote.pk %}">← Volver al lote</a>
+        {% else %}
         <a class="link link-back" href="{% url 'recursos:hoja_subcontrato_list' %}">← Volver a hojas</a>
+        {% endif %}
         <a href="{% url 'recursos:subcontrato_list' %}?hoja={{ hoja.pk }}" class="btn btn-primary">Ver/editar hoja</a>
     </header>
 

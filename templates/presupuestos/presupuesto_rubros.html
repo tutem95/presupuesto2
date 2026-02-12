@@ -9,6 +9,8 @@
             <p>Fecha: {{ presupuesto.fecha|date:"d/m/Y" }} · Lote: {{ presupuesto.lote.nombre }}{% if presupuesto.tipo_dolar %} · {{ presupuesto.tipo_dolar.nombre }} {{ presupuesto.fecha_dolar|date:"d/m/Y" }}{% endif %}</p>
         </div>
         <a class="link link-back" href="{% url 'presupuestos:presupuesto_list' %}">← Volver a presupuestos</a>
+        <a href="{% url 'presupuestos:presupuesto_edit' presupuesto.pk %}" class="btn btn-primary" style="margin-left:12px;">Editar</a>
+        <a href="{% url 'presupuestos:presupuesto_delete' presupuesto.pk %}" class="btn" style="margin-left:8px; border:1px solid var(--danger); color:var(--danger); text-decoration:none;">Eliminar</a>
     </header>
 
     {% if chart_data %}

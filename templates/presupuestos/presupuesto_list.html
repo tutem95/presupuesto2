@@ -8,25 +8,48 @@
             <h1>Presupuestos</h1>
             <p>Presupuestos armados por obra e instancia.</p>
         </div>
-        <a href="{% url 'general:dashboard' %}" class="link-back">← Volver al panel</a>
+        <a href="{% url 'general:presupuesto' %}" class="link-back">← Volver</a>
         <a href="{% url 'presupuestos:presupuesto_create' %}" class="btn btn-primary" style="margin-left:12px;">+ Agregar presupuesto</a>
     </header>
+
+    <section class="card" style="margin-bottom:16px;">
+        <form method="get" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+            <div style="display:flex; gap:8px; align-items:center;">
+                <span style="font-size:0.9rem; color:var(--text-muted);">Filtrar:</span>
+                <a href="?filtro=activos{% if buscar %}&buscar={{ buscar|urlencode }}{% endif %}" class="btn {% if filtro == 'activos' %}btn-primary{% else %}btn{% endif %}" style="padding:6px 12px; text-decoration:none; font-size:0.9rem;">Activos</a>
+                <a href="?filtro=todos{% if buscar %}&buscar={{ buscar|urlencode }}{% endif %}" class="btn {% if filtro == 'todos' %}btn-primary{% else %}btn{% endif %}" style="padding:6px 12px; text-decoration:none; font-size:0.9rem;">Todos</a>
+                <a href="?filtro=cancelados{% if buscar %}&buscar={{ buscar|urlencode }}{% endif %}" class="btn {% if filtro == 'cancelados' %}btn-primary{% else %}btn{% endif %}" style="padding:6px 12px; text-decoration:none; font-size:0.9rem;">Cancelados</a>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <label for="buscar" style="font-size:0.9rem; color:var(--text-muted);">Buscar:</label>
+                <input type="text" name="buscar" id="buscar" value="{{ buscar }}" placeholder="Nombre de obra" class="input" style="width:200px;">
+                <input type="hidden" name="filtro" value="{{ filtro }}">
+                <button type="submit" class="btn btn-primary" style="padding:6px 14px;">Buscar</button>
+            </div>
+        </form>
+    </section>
 
     <section class="card">
         {% if presupuestos %}
         <ul class="presupuesto-list">
             {% for p in presupuestos %}
-            <li class="presupuesto-list-item">
-                <a href="{% url 'presupuestos:presupuesto_rubros' p.pk %}" class="presupuesto-list-link">
+            <li class="presupuesto-list-item" style="display:flex; align-items:center; gap:12px;">
+                <a href="{% url 'presupuestos:presupuesto_rubros' p.pk %}" class="presupuesto-list-link" style="flex:1;">
                     <span class="presupuesto-list-name">{{ p.obra.nombre }}</span>
                     <span class="presupuesto-list-meta">{{ p.fecha|date:"d/m/Y" }} · {{ p.instancia }}</span>
                     <span class="presupuesto-list-total">{% if p.total_usd is not None %}{{ p.total_usd|floatformat:2 }} USD{% else %}-{% endif %}</span>
                 </a>
+                <form method="post" action="{% url 'presupuestos:presupuesto_toggle_activo' p.pk %}?filtro={{ filtro }}{% if buscar %}&buscar={{ buscar|urlencode }}{% endif %}" style="margin:0;" onsubmit="return true;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="padding:4px 10px; font-size:0.8rem; {% if p.activo %}background:rgba(37,99,235,0.1); color:var(--accent);{% else %}background:#f1f5f9; color:var(--text-muted);{% endif %} border:1px solid transparent;">
+                        {% if p.activo %}Activo{% else %}Cancelado{% endif %}
+                    </button>
+                </form>
             </li>
             {% endfor %}
         </ul>
         {% else %}
-        <p style="font-size:0.9rem; color:var(--text-muted);">No hay presupuestos. Creá uno para empezar.</p>
+        <p style="font-size:0.9rem; color:var(--text-muted);">No hay presupuestos{% if filtro == 'activos' %} activos{% elif filtro == 'cancelados' %} cancelados{% endif %}{% if buscar %} que coincidan con «{{ buscar }}»{% endif %}.</p>
         {% endif %}
     </section>
 </div>

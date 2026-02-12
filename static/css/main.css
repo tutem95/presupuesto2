@@ -160,6 +160,40 @@ body {
     text-decoration: none;
 }
 
+.sidebar-section {
+    padding: 12px 20px 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.sidebar-link-indent {
+    padding-left: 32px;
+}
+
+.sidebar-muted {
+    color: var(--text-muted);
+    cursor: default;
+}
+
+.sidebar-muted:hover {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.panel-card-disabled {
+    opacity: 0.7;
+    cursor: default;
+    pointer-events: none;
+}
+
+.panel-card-disabled:hover {
+    border-color: var(--border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
 .site-main {
     flex: 1;
     min-width: 0;

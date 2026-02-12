@@ -1,13 +1,17 @@
 from django import forms
+from django.contrib.auth import get_user_model
 
 from .models import (
     CategoriaMaterial,
+    CompanyMembership,
+    CompanyMembershipSection,
     CotizacionDolar,
     Equipo,
     Obra,
     Proveedor,
     RefEquipo,
     Rubro,
+    Section,
     Subrubro,
     TipoDolar,
     TipoMaterial,
@@ -149,4 +153,83 @@ class ObraForm(forms.ModelForm):
         self.fields["m2_construibles"].required = False
         self.fields["m2_vendibles"].required = False
         self.fields["valor_terreno"].required = False
+
+
+class MemberAddForm(forms.Form):
+    """Formulario para agregar usuario a la empresa (por username)."""
+    username = forms.CharField(
+        label="Usuario",
+        max_length=150,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "Nombre de usuario", "autocomplete": "off"}),
+    )
+    sections = forms.MultipleChoiceField(
+        label="Secciones",
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+    )
+
+    def __init__(self, *args, company=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.company = company
+        if company:
+            self.fields["sections"].choices = [
+                (s.code, s.nombre) for s in Section.objects.all().order_by("nombre")
+            ]
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username", "").strip()
+        if not username:
+            raise forms.ValidationError("Ingresá el nombre de usuario.")
+        User = get_user_model()
+        try:
+            user = User.objects.get(username__iexact=username)
+        except User.DoesNotExist:
+            raise forms.ValidationError("Usuario no encontrado. Creá el usuario en Django admin primero.")
+        if self.company and CompanyMembership.objects.filter(user=user, company=self.company).exists():
+            raise forms.ValidationError("Ese usuario ya pertenece a esta empresa.")
+        return user.username
+
+    def save(self):
+        User = get_user_model()
+        user = User.objects.get(username__iexact=self.cleaned_data["username"])
+        membership = CompanyMembership.objects.create(user=user, company=self.company)
+        for code in self.cleaned_data["sections"]:
+            section = Section.objects.get(code=code)
+            CompanyMembershipSection.objects.create(membership=membership, section=section)
+        return membership
+
+
+class MemberEditForm(forms.Form):
+    """Formulario para editar secciones de un miembro."""
+    sections = forms.MultipleChoiceField(
+        label="Secciones",
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    def __init__(self, *args, company=None, membership=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.company = company
+        self.membership = membership
+        if company:
+            self.fields["sections"].choices = [
+                (s.code, s.nombre) for s in Section.objects.all().order_by("nombre")
+            ]
+        if membership:
+            self.fields["sections"].required = not membership.is_admin
+            self.fields["sections"].initial = list(
+                membership.membership_sections.values_list("section__code", flat=True)
+            )
+
+    def clean_sections(self):
+        sections = self.cleaned_data.get("sections", [])
+        if self.membership and not self.membership.is_admin and not sections:
+            raise forms.ValidationError("Los usuarios no-admin deben tener al menos una sección.")
+        return sections
+
+    def save(self):
+        self.membership.membership_sections.all().delete()
+        for code in self.cleaned_data.get("sections", []):
+            section = Section.objects.get(code=code)
+            CompanyMembershipSection.objects.create(membership=self.membership, section=section)
 

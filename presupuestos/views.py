@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from recursos.models import Rubro, Subrubro
 
@@ -16,10 +17,23 @@ def presupuesto_list(request):
     ).select_related("obra", "lote", "tipo_dolar").prefetch_related(
         "items__tarea"
     ).order_by("-creado_en")
+
+    # Filtro: activos, todos, cancelados
+    filtro = request.GET.get("filtro", "activos")
+    if filtro == "activos":
+        presupuestos = presupuestos.filter(activo=True)
+    elif filtro == "cancelados":
+        presupuestos = presupuestos.filter(activo=False)
+
+    # Búsqueda por nombre (obra)
+    buscar = (request.GET.get("buscar") or "").strip()
+    if buscar:
+        presupuestos = presupuestos.filter(obra__nombre__icontains=buscar)
+
     return render(
         request,
         "presupuestos/presupuesto_list.html",
-        {"presupuestos": presupuestos},
+        {"presupuestos": presupuestos, "filtro": filtro, "buscar": buscar},
     )
 
 
@@ -39,6 +53,57 @@ def presupuesto_create(request):
         request,
         "presupuestos/presupuesto_form.html",
         {"form": form, "presupuesto": None},
+    )
+
+
+@login_required
+def presupuesto_edit(request, pk):
+    presupuesto = get_object_or_404(Presupuesto, pk=pk, company=request.company)
+    if request.method == "POST":
+        form = PresupuestoForm(request.POST, request=request, instance=presupuesto)
+        if form.is_valid():
+            form.save()
+            return redirect("presupuestos:presupuesto_rubros", pk=presupuesto.pk)
+    else:
+        form = PresupuestoForm(request=request, instance=presupuesto)
+
+    return render(
+        request,
+        "presupuestos/presupuesto_form.html",
+        {"form": form, "presupuesto": presupuesto},
+    )
+
+
+@login_required
+def presupuesto_toggle_activo(request, pk):
+    """Alterna activo/cancelado del presupuesto."""
+    presupuesto = get_object_or_404(Presupuesto, pk=pk, company=request.company)
+    if request.method == "POST":
+        presupuesto.activo = not presupuesto.activo
+        presupuesto.save()
+    filtro = request.GET.get("filtro", "activos")
+    buscar = request.GET.get("buscar", "")
+    url = reverse("presupuestos:presupuesto_list")
+    params = []
+    if filtro:
+        params.append(f"filtro={filtro}")
+    if buscar:
+        params.append(f"buscar={buscar}")
+    if params:
+        url += "?" + "&".join(params)
+    return redirect(url)
+
+
+@login_required
+def presupuesto_delete(request, pk):
+    presupuesto = get_object_or_404(Presupuesto, pk=pk, company=request.company)
+    if request.method == "POST":
+        presupuesto.delete()
+        return redirect("presupuestos:presupuesto_list")
+    return render(
+        request,
+        "general/confirm_delete.html",
+        {"object": presupuesto, "cancel_url": "presupuestos:presupuesto_list"},
     )
 
 

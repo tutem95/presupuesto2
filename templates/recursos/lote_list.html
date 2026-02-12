@@ -6,89 +6,27 @@
     <header>
         <div class="title-block">
             <h1>Tareas</h1>
-            <p>Lotes de precios: materiales, mano de obra, subcontratos, mezclas y Maestro Tareas.</p>
+            <p>Lotes de precios y Maestro Tareas.</p>
         </div>
         <a class="link link-back" href="{% url 'general:dashboard' %}">← Volver al panel</a>
+        <a href="{% url 'recursos:lote_create' %}" class="btn btn-primary" style="margin-left:12px;">+ Agregar nuevo lote</a>
     </header>
 
-    <section class="layout">
-        <section class="card">
-            <h2>Agregar nuevo Lote</h2>
-            <form method="post">
-                {% csrf_token %}
-                <div class="field">
-                    <label for="nombre">Nombre del lote (ej: 01/01/2025)</label>
-                    <input type="text" name="nombre" id="nombre" required placeholder="01/01/2025">
-                </div>
-                <div class="field" style="margin-top:16px;">
-                    <strong>Origen de precios (elegí un lote por categoría):</strong>
-                </div>
-                <div class="field">
-                    <label for="origen_maestro">Maestro Tareas</label>
-                    <select name="origen_maestro" id="origen_maestro">
-                        <option value="">-- Sin copiar --</option>
-                        {% for l in lotes %}
-                        <option value="{{ l.pk }}">{{ l.nombre }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="origen_materiales">Materiales</label>
-                    <select name="origen_materiales" id="origen_materiales">
-                        <option value="actual">Precios actuales</option>
-                        {% for l in lotes %}
-                        <option value="{{ l.pk }}">{{ l.nombre }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="origen_mo">Mano de obra</label>
-                    <select name="origen_mo" id="origen_mo">
-                        <option value="actual">Precios actuales</option>
-                        {% for l in lotes %}
-                        <option value="{{ l.pk }}">{{ l.nombre }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="origen_subcontratos">Subcontratos</label>
-                    <select name="origen_subcontratos" id="origen_subcontratos">
-                        <option value="actual">Precios actuales</option>
-                        {% for l in lotes %}
-                        <option value="{{ l.pk }}">{{ l.nombre }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="origen_mezclas">Mezclas</label>
-                    <select name="origen_mezclas" id="origen_mezclas">
-                        <option value="actual">Sin copiar</option>
-                        {% for l in lotes %}
-                        <option value="{{ l.pk }}">{{ l.nombre }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary" style="margin-top:12px;">Crear lote</button>
-            </form>
-        </section>
-
-        <section class="card">
-            <h2>Lotes</h2>
-            {% if lotes %}
-            <ul class="list" style="border:none;">
-                {% for lote in lotes %}
-                <li class="list-item" style="border-bottom:1px solid var(--border);">
-                    <a href="{% url 'recursos:lote_detalle' lote.pk %}">
-                        <span>{{ lote.nombre }}</span>
-                        <span>{{ lote.creado_en|date:"d/m/Y" }}</span>
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p style="font-size:0.9rem; color:var(--text-muted);">No hay lotes. Creá uno para empezar.</p>
-            {% endif %}
-        </section>
+    <section class="card">
+        {% if lotes %}
+        <ul class="presupuesto-list">
+            {% for lote in lotes %}
+            <li class="presupuesto-list-item">
+                <a href="{% url 'recursos:lote_detalle' lote.pk %}" class="presupuesto-list-link">
+                    <span class="presupuesto-list-name">{{ lote.nombre }}</span>
+                    <span class="presupuesto-list-meta">{{ lote.creado_en|date:"d/m/Y" }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="font-size:0.9rem; color:var(--text-muted);">No hay lotes. Creá uno para empezar.</p>
+        {% endif %}
     </section>
 </div>
 {% endblock %}

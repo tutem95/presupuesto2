@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Compras · Pagos por semana{% endblock %}
+
+{% block content %}
+<div class="shell">
+    <header>
+        <div class="title-block">
+            <h1>Compras</h1>
+            <p>Pagos organizados por semana.</p>
+        </div>
+        <a href="{% url 'general:dashboard' %}" class="link-back">← Volver</a>
+        <a href="{% url 'compras:semana_create' %}" class="btn btn-primary" style="margin-left:12px;">+ Nueva semana</a>
+    </header>
+
+    <section class="card" style="margin-bottom:16px;">
+        <form method="get" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+            <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:0.9rem; color:var(--text-muted);">Año:</label>
+                <select name="año" class="input" style="width:100px;">
+                    <option value="">-- Todos --</option>
+                    {% for a in años %}
+                    <option value="{{ a }}" {% if año_filtro == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <label style="font-size:0.9rem; color:var(--text-muted);">Mes:</label>
+                <select name="mes" class="input" style="width:120px;">
+                    <option value="">-- Todos --</option>
+                    {% for m in meses %}
+                    <option value="{{ m }}" {% if mes_filtro == m %}selected{% endif %}>
+                        {{ m|stringformat:"02d" }} - {% if m == 1 %}Ene{% elif m == 2 %}Feb{% elif m == 3 %}Mar{% elif m == 4 %}Abr{% elif m == 5 %}May{% elif m == 6 %}Jun{% elif m == 7 %}Jul{% elif m == 8 %}Ago{% elif m == 9 %}Sep{% elif m == 10 %}Oct{% elif m == 11 %}Nov{% else %}Dic{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="hidden" name="semana" value="{{ semana_filtro }}">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </form>
+    </section>
+
+    <section class="card">
+        {% if tree %}
+        <div class="compras-tree">
+            {% for año, meses_dict in tree.items %}
+            <div class="compras-tree-year">
+                <h2 class="compras-tree-title">{{ año }}</h2>
+                {% for mes, semanas_list in meses_dict.items %}
+                <div class="compras-tree-month">
+                    <h3 class="compras-tree-subtitle">
+                        {% if mes == 1 %}Enero{% elif mes == 2 %}Febrero{% elif mes == 3 %}Marzo{% elif mes == 4 %}Abril{% elif mes == 5 %}Mayo{% elif mes == 6 %}Junio{% elif mes == 7 %}Julio{% elif mes == 8 %}Agosto{% elif mes == 9 %}Septiembre{% elif mes == 10 %}Octubre{% elif mes == 11 %}Noviembre{% else %}Diciembre{% endif %}
+                    </h3>
+                    <ul class="compras-tree-weeks">
+                        {% for s in semanas_list %}
+                        <li>
+                            <a href="{% url 'compras:semana_detalle' s.pk %}" class="compras-week-link">
+                                <span>Semana del {{ s.fecha|date:"d/m/Y" }}</span>
+                                <span class="compras-week-count">{{ s.compras_count }} compras</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="font-size:0.9rem; color:var(--text-muted);">No hay semanas. Creá una nueva semana para empezar.</p>
+        {% endif %}
+    </section>
+</div>
+
+<style>
+.compras-tree { padding: 0; }
+.compras-tree-year { margin-bottom: 28px; }
+.compras-tree-title { font-size: 1.25rem; font-weight: 600; color: var(--title); margin: 0 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--accent); }
+.compras-tree-month { margin-bottom: 16px; }
+.compras-tree-subtitle { font-size: 1rem; font-weight: 500; color: var(--text-muted); margin: 0 0 8px; }
+.compras-tree-weeks { list-style: none; margin: 0; padding: 0; }
+.compras-tree-weeks li { margin: 4px 0; }
+.compras-week-link { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; background: #f8fafc; border: 1px solid var(--border); text-decoration: none; color: var(--text); transition: background 0.15s; }
+.compras-week-link:hover { background: #e2e8f0; color: var(--accent); }
+.compras-week-count { font-size: 0.85rem; color: var(--text-muted); }
+</style>
+{% endblock %}

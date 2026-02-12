@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Usuarios y accesos · Presupuesto{% endblock %}
+
+{% block content %}
+<div class="shell">
+    <header>
+        <div class="title-block">
+            <h1>Usuarios y accesos</h1>
+            <p>Gestioná quién tiene acceso a cada sección de la empresa.</p>
+        </div>
+        <a class="link link-back" href="{% url 'general:dashboard' %}">← Volver al panel</a>
+        <a href="{% url 'general:member_add' %}" class="btn btn-primary" style="margin-left:12px;">+ Agregar usuario</a>
+    </header>
+
+    <section class="card">
+        {% if members %}
+        <ul class="list" style="border:none;">
+            {% for m in members %}
+            <li class="list-item" style="border-bottom:1px solid var(--border);">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <span style="font-weight:600;">{{ m.user.username }}</span>
+                        {% if m.is_admin %}
+                        <span style="font-size:0.75rem; padding:2px 8px; border-radius:4px; background:var(--accent); color:white; margin-left:8px;">Admin</span>
+                        {% else %}
+                        <span style="font-size:0.85rem; color:var(--text-muted); margin-left:8px;">
+                            {% for ms in m.membership_sections.all %}{{ ms.section.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if not m.is_admin or m.pk != request.membership.pk %}
+                        <a href="{% url 'general:member_edit' m.pk %}" class="btn-link">Editar</a>
+                        {% if m.pk != request.membership.pk %}
+                        ·
+                        <a href="{% url 'general:member_remove' m.pk %}" class="btn-link btn-danger">Quitar</a>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="font-size:0.9rem; color:var(--text-muted);">No hay usuarios. Agregá uno para empezar.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

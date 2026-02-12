@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from general.models import (
     CategoriaMaterial,
+    CompanyMembership,
     CotizacionDolar,
     Equipo,
     Obra,
@@ -21,6 +22,8 @@ from recursos.models import Lote, ManoDeObra, Material, Mezcla, Subcontrato, Tar
 from .forms import (
     CategoriaMaterialForm,
     EquipoForm,
+    MemberAddForm,
+    MemberEditForm,
     ObraForm,
     ProveedorForm,
     RefEquipoForm,
@@ -68,9 +71,8 @@ def indice(request):
 
 @login_required
 def presupuesto(request):
-    """Redirige al módulo de presupuestos."""
-    from django.shortcuts import redirect
-    return redirect("presupuestos:presupuesto_list")
+    """Página general de Presupuestos: Índice, Tareas, Presupuesto, Tabla Dólar."""
+    return render(request, "general/presupuesto.html")
 
 
 @login_required
@@ -662,5 +664,87 @@ def tabla_dolar(request):
         {
             "tipos": tipos,
             "rows": rows,
+        },
+    )
+
+
+# ========== Gestión de usuarios (solo admin de empresa) ==========
+
+@login_required
+def member_list(request):
+    """Lista de miembros de la empresa. Solo admin."""
+    if not request.membership or not request.membership.is_admin:
+        return redirect("no_section_access")
+    company = request.company
+    members = (
+        CompanyMembership.objects.filter(company=company)
+        .select_related("user")
+        .prefetch_related("membership_sections__section")
+        .order_by("user__username")
+    )
+    return render(
+        request,
+        "general/member_list.html",
+        {"members": members},
+    )
+
+
+@login_required
+def member_add(request):
+    """Agregar usuario a la empresa. Solo admin."""
+    if not request.membership or not request.membership.is_admin:
+        return redirect("no_section_access")
+    company = request.company
+    if request.method == "POST":
+        form = MemberAddForm(request.POST, company=company)
+        if form.is_valid():
+            form.save()
+            return redirect("general:member_list")
+    else:
+        form = MemberAddForm(company=company)
+    return render(
+        request,
+        "general/member_form.html",
+        {"form": form, "member": None},
+    )
+
+
+@login_required
+def member_edit(request, pk):
+    """Editar secciones de un miembro. Solo admin."""
+    if not request.membership or not request.membership.is_admin:
+        return redirect("no_section_access")
+    company = request.company
+    membership = get_object_or_404(CompanyMembership, pk=pk, company=company)
+    if request.method == "POST":
+        form = MemberEditForm(request.POST, company=company, membership=membership)
+        if form.is_valid():
+            form.save()
+            return redirect("general:member_list")
+    else:
+        form = MemberEditForm(company=company, membership=membership)
+    return render(
+        request,
+        "general/member_form.html",
+        {"form": form, "member": membership},
+    )
+
+
+@login_required
+def member_remove(request, pk):
+    """Quitar miembro de la empresa. Solo admin."""
+    if not request.membership or not request.membership.is_admin:
+        return redirect("no_section_access")
+    membership = get_object_or_404(CompanyMembership, pk=pk, company=request.company)
+    if request.method == "POST":
+        membership.delete()
+        return redirect("general:member_list")
+    return render(
+        request,
+        "general/confirm_delete.html",
+        {
+            "object": membership.user,
+            "cancel_url": "general:member_list",
+            "message": "¿Quitar este usuario de la empresa?",
         },
     )

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if compra %}Editar{% else %}Agregar{% endif %} compra · Compras{% endblock %}
+
+{% block content %}
+<div class="shell">
+    <header>
+        <div>
+            <h1>{% if compra %}Editar{% else %}Agregar{% endif %} compra</h1>
+            <p>Semana del {{ semana.fecha|date:"d/m/Y" }}</p>
+        </div>
+        <a class="link link-back" href="{% url 'compras:semana_detalle' semana.pk %}">← Volver a la semana</a>
+    </header>
+
+    <section class="card">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">{% if compra %}Guardar{% else %}Agregar{% endif %}</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

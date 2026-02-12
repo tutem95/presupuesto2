@@ -9,7 +9,7 @@ from .models import Presupuesto, PresupuestoItem
 class PresupuestoForm(forms.ModelForm):
     class Meta:
         model = Presupuesto
-        fields = ["obra", "fecha", "instancia", "lote", "tipo_dolar", "fecha_dolar"]
+        fields = ["obra", "fecha", "instancia", "lote", "tipo_dolar", "fecha_dolar", "activo"]
         widgets = {
             "fecha": forms.DateInput(attrs={"type": "date"}),
             "instancia": forms.TextInput(attrs={"placeholder": "Ej: 1, 2, Revisión"}),

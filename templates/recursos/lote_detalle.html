@@ -9,6 +9,7 @@
             <p>Precios y tareas de esta versión. Elegí tipo y fecha de dólar para ver totales en USD.</p>
         </div>
         <a class="link link-back" href="{% url 'tareas' %}">← Volver a lotes</a>
+        <a href="{% url 'recursos:lote_edit' lote.pk %}" class="btn btn-primary" style="margin-left:12px;">Editar nombre</a>
     </header>
 
     <section class="card lote-dolar-card">
@@ -53,13 +54,13 @@
                 </a>
             </li>
             <li class="lote-seccion">
-                <a href="{% url 'recursos:hoja_mano_de_obra_detalle' lote.hoja_mano_de_obra.pk %}" class="lote-seccion-link">
+                <a href="{% url 'recursos:mano_de_obra_list' %}?hoja={{ lote.hoja_mano_de_obra.pk }}" class="lote-seccion-link">
                     <span class="lote-seccion-titulo">Mano de obra</span>
                     <span class="lote-seccion-desc">{{ lote.hoja_mano_de_obra.nombre }} · Ver / editar precios</span>
                 </a>
             </li>
             <li class="lote-seccion">
-                <a href="{% url 'recursos:hoja_subcontrato_detalle' lote.hoja_subcontratos.pk %}" class="lote-seccion-link">
+                <a href="{% url 'recursos:subcontrato_list' %}?hoja={{ lote.hoja_subcontratos.pk }}" class="lote-seccion-link">
                     <span class="lote-seccion-titulo">Subcontratos</span>
                     <span class="lote-seccion-desc">{{ lote.hoja_subcontratos.nombre }} · Ver / editar precios</span>
                 </a>

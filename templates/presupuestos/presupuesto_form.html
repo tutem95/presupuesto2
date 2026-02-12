@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Nuevo presupuesto · Presupuesto{% endblock %}
+{% block title %}{% if presupuesto %}Editar{% else %}Nuevo{% endif %} presupuesto · Presupuesto{% endblock %}
 
 {% block content %}
 <div class="shell">
     <header>
         <div>
-            <h1>Nuevo presupuesto</h1>
+            <h1>{% if presupuesto %}Editar{% else %}Nuevo{% endif %} presupuesto</h1>
             <p>Obra, fecha, instancia, lote y dólar para ver totales en USD.</p>
         </div>
-        <a class="link link-back" href="{% url 'presupuestos:presupuesto_list' %}">← Volver a presupuestos</a>
+        <a class="link link-back" href="{% if presupuesto %}{% url 'presupuestos:presupuesto_rubros' presupuesto.pk %}{% else %}{% url 'presupuestos:presupuesto_list' %}{% endif %}">← Volver</a>
     </header>
 
     <section class="card">
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Crear presupuesto</button>
+            <button type="submit" class="btn btn-primary">{% if presupuesto %}Guardar{% else %}Crear presupuesto{% endif %}</button>
         </form>
     </section>
 </div>

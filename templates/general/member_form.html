@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{% if member %}Editar usuario{% else %}Agregar usuario{% endif %} · Presupuesto{% endblock %}
+
+{% block content %}
+<div class="shell">
+    <header>
+        <div class="title-block">
+            <h1>{% if member %}Editar {{ member.user.username }}{% else %}Agregar usuario{% endif %}</h1>
+            <p>{% if member %}Secciones a las que tiene acceso.{% else %}El usuario debe existir en el sistema (crealo en Django admin si no existe).{% endif %}</p>
+        </div>
+        <a class="link link-back" href="{% url 'general:member_list' %}">← Volver a usuarios</a>
+    </header>
+
+    <section class="card" style="max-width:480px;">
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <ul class="errorlist">{{ form.non_field_errors }}</ul>
+            {% endif %}
+            {% if not member %}
+            <div class="field">
+                {{ form.username.errors }}
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                {{ form.username }}
+            </div>
+            {% endif %}
+            <div class="field">
+                {{ form.sections.errors }}
+                <label>{{ form.sections.label }}</label>
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+                    {% for value, label in form.sections.field.widget.choices %}
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" name="sections" value="{{ value }}" {% if form.sections.value and value in form.sections.value %}checked{% endif %}>
+                        {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div style="margin-top:20px;">
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

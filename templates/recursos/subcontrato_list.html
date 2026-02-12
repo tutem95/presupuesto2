@@ -18,22 +18,18 @@
         <div>
             <h1>Subcontratos</h1>
             <p>Hoja tipo Excel para editar y filtrar la lista de subcontratos.</p>
+            {% if lote %}
+            <a class="link link-back" href="{% url 'recursos:lote_detalle' lote.pk %}">← Volver al lote</a>
+            {% else %}
             <a class="link link-back" href="{% url 'general:dashboard' %}">← Volver al panel</a>
+            {% endif %}
         </div>
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <label for="hoja-select" style="font-size:0.9rem; color:var(--text-muted);">Ver hoja:</label>
-            <select id="hoja-select" style="width:auto; min-width:180px; padding:6px 10px;">
-                <option value="">Precios actuales</option>
-                {% for h in hojas %}
-                    <option value="{{ h.pk }}" {% if hoja_seleccionada and hoja_seleccionada.pk == h.pk %}selected{% endif %}>{{ h.nombre }}</option>
-                {% endfor %}
-            </select>
             {% if not modo_hoja %}
             <button class="btn btn-primary" type="button" onclick="mostrarFilaNuevo();">+ Nuevo subcontrato</button>
             {% else %}
             <a href="{% url 'recursos:subcontrato_list' %}?hoja={{ hoja_seleccionada.pk }}&agregar=1" class="btn btn-primary">+ Agregar subcontrato a hoja</a>
             {% endif %}
-            <a href="{% url 'recursos:hoja_subcontrato_list' %}" class="link" style="margin-left:8px;">Ver hojas de precios</a>
         </div>
     </header>
 
@@ -46,16 +42,10 @@
         </div>
 
         <div style="overflow-x:auto;">
-            {% if modo_hoja %}
-            <div id="tabla-wrapper">
-            {% else %}
-            <form method="post" action="{% url 'recursos:subcontrato_bulk_update' %}" id="bulk-form">
-                {% csrf_token %}
-            {% endif %}
-                <table id="tabla-subcontratos">
+            <table id="tabla-subcontratos">
                     <thead>
                     <tr>
-                        <th>{% if not modo_hoja %}<input type="checkbox" id="select-all">{% endif %}</th>
+                        <th><input type="checkbox" id="select-all"></th>
                         <th>#</th>
                         <th>Rubro</th>
                         <th>Subrubro</th>
@@ -88,7 +78,7 @@
                         {% if modo_hoja %}
                             {% for detalle in subcontratos %}
                             <tr>
-                                <td></td>
+                                <td><input type="checkbox" name="selected_ids" value="{{ detalle.pk }}" form="bulk-form"></td>
                                 <td>{{ forloop.counter }}</td>
                                 {% if editing_hoja and editing_hoja.pk == detalle.pk %}
                                 <form method="post" action="{% url 'recursos:hoja_subcontrato_detalle_edit' hoja_seleccionada.pk detalle.pk %}">
@@ -130,7 +120,7 @@
                         {% else %}
                             {% for subc in subcontratos %}
                             <tr>
-                                <td><input type="checkbox" name="selected_ids" value="{{ subc.pk }}"></td>
+                                <td><input type="checkbox" name="selected_ids" value="{{ subc.pk }}" form="bulk-form"></td>
                                 <td>{{ forloop.counter }}</td>
                             {% if editing and editing.pk == subc.pk %}
                                 <form method="post" action="{% url 'recursos:subcontrato_edit' subc.pk %}">
@@ -175,19 +165,18 @@
                     </tbody>
                 </table>
 
-                {% if not modo_hoja %}
-                <div style="margin-top: 14px; display:flex; align-items:center; gap:8px; font-size:0.9rem;">
+            <form method="post" action="{% url 'recursos:subcontrato_bulk_update' %}" id="bulk-form" style="margin-top:14px;">
+                {% csrf_token %}
+                {% if hoja_seleccionada %}
+                <input type="hidden" name="hoja" value="{{ hoja_seleccionada.pk }}">
+                {% endif %}
+                <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem;">
                     <span>Actualizar precios de seleccionados en un</span>
                     <input type="number" name="porcentaje" step="0.01" min="0" style="width:90px;" value="0.00">
                     <span>%</span>
                     <button type="submit" class="btn btn-primary" style="padding:6px 14px;">Actualizar precios</button>
                 </div>
-                {% endif %}
-            {% if modo_hoja %}
-            </div>
-            {% else %}
             </form>
-            {% endif %}
         </div>
 
         {% if not modo_hoja and subcontratos %}
@@ -263,11 +252,14 @@
 </main>
 
 <script>
-    document.getElementById('hoja-select').addEventListener('change', function () {
-        var base = "{% url 'recursos:subcontrato_list' %}";
-        var pk = this.value;
-        window.location = pk ? base + "?hoja=" + encodeURIComponent(pk) : base;
-    });
+    (function () {
+        var el = document.getElementById('hoja-select');
+        if (el) el.addEventListener('change', function () {
+            var base = "{% url 'recursos:subcontrato_list' %}";
+            var pk = this.value;
+            window.location = pk ? base + "?hoja=" + encodeURIComponent(pk) : base;
+        });
+    })();
 
     function mostrarFilaNuevo() {
         const card = document.getElementById('card-nuevo-subcontrato');

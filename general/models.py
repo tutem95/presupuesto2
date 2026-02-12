@@ -17,6 +17,23 @@ class Company(models.Model):
         return self.nombre
 
 
+class Section(models.Model):
+    """
+    Sección/módulo de la app (Presupuestos, Sueldos, Compras).
+    Cada usuario tiene acceso a las secciones que el admin le asigne.
+    """
+    code = models.CharField(max_length=50, unique=True)
+    nombre = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Sección"
+        verbose_name_plural = "Secciones"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
 class CompanyMembership(models.Model):
     """Usuario pertenece a una empresa por membership. En login se setea la company activa."""
     user = models.ForeignKey(
@@ -29,6 +46,17 @@ class CompanyMembership(models.Model):
         on_delete=models.CASCADE,
         related_name="memberships",
     )
+    is_admin = models.BooleanField(
+        default=False,
+        help_text="Admin de la empresa: puede gestionar usuarios y tiene acceso a todas las secciones.",
+    )
+    sections = models.ManyToManyField(
+        Section,
+        through="CompanyMembershipSection",
+        related_name="memberships",
+        blank=True,
+        help_text="Secciones a las que tiene acceso. Admins ignoran esto.",
+    )
 
     class Meta:
         verbose_name = "Membership empresa"
@@ -37,6 +65,29 @@ class CompanyMembership(models.Model):
 
     def __str__(self):
         return f"{self.user} @ {self.company.nombre}"
+
+    def has_section_access(self, section_code):
+        """True si tiene acceso (es admin o tiene la sección asignada)."""
+        if self.is_admin:
+            return True
+        return self.membership_sections.filter(section__code=section_code).exists()
+
+
+class CompanyMembershipSection(models.Model):
+    """Relación membership <-> sección."""
+    membership = models.ForeignKey(
+        CompanyMembership,
+        on_delete=models.CASCADE,
+        related_name="membership_sections",
+    )
+    section = models.ForeignKey(
+        Section,
+        on_delete=models.CASCADE,
+        related_name="membership_sections",
+    )
+
+    class Meta:
+        unique_together = ("membership", "section")
 
 
 class Rubro(models.Model):

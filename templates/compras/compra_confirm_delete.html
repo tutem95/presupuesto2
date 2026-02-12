@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Eliminar compra{% endblock %}
+{% block body_class %}body-center{% endblock %}
+
+{% block content %}
+<main class="card" style="max-width:420px;">
+    <h1>Eliminar compra</h1>
+    <p>Vas a eliminar la compra <span style="color:var(--danger); font-weight:500;">{{ compra.obra.nombre }} - {{ compra.item }}</span>. Esta acción no se puede deshacer.</p>
+
+    <form method="post" style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        {% csrf_token %}
+        <a href="{% url 'compras:semana_detalle' semana.pk %}" class="btn" style="border:1px solid var(--border); background:transparent; color:var(--text); text-decoration:none;">Cancelar</a>
+        <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg, var(--danger-soft), var(--danger));">Eliminar</button>
+    </form>
+</main>
+{% endblock %}

@@ -31,6 +31,7 @@ class Presupuesto(models.Model):
         related_name="presupuestos",
     )
     fecha_dolar = models.DateField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,

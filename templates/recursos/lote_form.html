@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Agregar lote · Presupuesto{% endblock %}
+
+{% block content %}
+<div class="shell">
+    <header>
+        <div class="title-block">
+            <h1>Agregar nuevo lote</h1>
+            <p>Elegí de qué lote copiar cada categoría de precios, o dejá sin copiar para empezar vacío.</p>
+        </div>
+        <a class="link link-back" href="{% url 'tareas' %}">← Volver a lotes</a>
+    </header>
+
+    <section class="card" style="max-width:480px;">
+        <form method="post">
+            {% csrf_token %}
+            <div class="field">
+                <label for="nombre">Nombre del lote (ej: 01/01/2025)</label>
+                <input type="text" name="nombre" id="nombre" required placeholder="01/01/2025" class="input">
+            </div>
+            <div class="field" style="margin-top:20px;">
+                <strong>Origen de precios (elegí un lote para copiar o dejá sin copiar):</strong>
+            </div>
+            <div class="field">
+                <label for="origen_maestro">Maestro Tareas</label>
+                <select name="origen_maestro" id="origen_maestro" class="input origen-select">
+                    <option value="">-- Sin copiar --</option>
+                    {% for l in lotes %}
+                    <option value="{{ l.pk }}">{{ l.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="origen_materiales">Materiales</label>
+                <select name="origen_materiales" id="origen_materiales" class="input origen-select">
+                    <option value="">-- Sin copiar --</option>
+                    {% for l in lotes %}
+                    <option value="{{ l.pk }}">{{ l.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="origen_mo">Mano de obra</label>
+                <select name="origen_mo" id="origen_mo" class="input origen-select">
+                    <option value="">-- Sin copiar --</option>
+                    {% for l in lotes %}
+                    <option value="{{ l.pk }}">{{ l.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="origen_subcontratos">Subcontratos</label>
+                <select name="origen_subcontratos" id="origen_subcontratos" class="input origen-select">
+                    <option value="">-- Sin copiar --</option>
+                    {% for l in lotes %}
+                    <option value="{{ l.pk }}">{{ l.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="origen_mezclas">Mezclas</label>
+                <select name="origen_mezclas" id="origen_mezclas" class="input origen-select">
+                    <option value="">-- Sin copiar --</option>
+                    {% for l in lotes %}
+                    <option value="{{ l.pk }}">{{ l.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-top:20px;">
+                <button type="submit" class="btn btn-primary">Crear lote</button>
+            </div>
+        </form>
+    </section>
+</div>
+<script>
+(function() {
+    var selects = document.querySelectorAll('.origen-select');
+    selects.forEach(function(sel) {
+        sel.addEventListener('change', function() {
+            var val = this.value;
+            if (val) {
+                selects.forEach(function(s) {
+                    if (s !== sel) s.value = val;
+                });
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

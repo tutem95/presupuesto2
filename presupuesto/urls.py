@@ -18,12 +18,15 @@ from django.contrib import admin
 from django.urls import include, path
 
 from recursos.views import lote_list
+from usuarios.views import no_section_access
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("login/", include("usuarios.urls")),
+    path("sin-acceso/", no_section_access, name="no_section_access"),
     path("", include("general.urls")),
     path("tareas/", lote_list, name="tareas"),
     path("recursos/", include("recursos.urls")),
     path("presupuestos/", include("presupuestos.urls")),
+    path("compras/", include("compras.urls")),
 ]

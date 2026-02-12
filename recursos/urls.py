@@ -93,6 +93,8 @@ urlpatterns = [
     ),
     # Lotes y Maestro Tareas
     path("lotes/", views.lote_list, name="lote_list"),
+    path("lotes/nuevo/", views.lote_create, name="lote_create"),
+    path("lotes/<int:pk>/editar/", views.lote_edit, name="lote_edit"),
     path("lotes/<int:pk>/", views.lote_detalle, name="lote_detalle"),
     path("lotes/<int:lote_pk>/tareas/", views.tarea_list, name="tarea_list"),
     path("lotes/<int:lote_pk>/tareas/nueva/", views.tarea_create, name="tarea_create"),

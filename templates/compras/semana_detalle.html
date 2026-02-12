@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Semana {{ semana.fecha|date:"d/m/Y" }} · Compras{% endblock %}
+
+{% block content %}
+<div class="shell">
+    <header>
+        <div class="title-block">
+            <h1>Semana del {{ semana.fecha|date:"d/m/Y" }}</h1>
+            <p>{{ semana.fecha|date:"Y" }} · {{ semana.fecha|date:"F" }}</p>
+        </div>
+        <a class="link link-back" href="{% url 'compras:compras_list' %}">← Volver a compras</a>
+        <a href="{% url 'compras:semana_edit' semana.pk %}" class="btn" style="margin-left:8px;">Editar semana</a>
+        <a href="{% url 'compras:compra_add' semana.pk %}" class="btn btn-primary" style="margin-left:8px;">+ Agregar compra</a>
+    </header>
+
+    <section class="card">
+        <h2 style="margin:0 0 16px;">Compras</h2>
+        {% if compras %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>OBRA</th>
+                        <th>RUBRO</th>
+                        <th>SUBRUBRO</th>
+                        <th>ITEM</th>
+                        <th>PROVEEDOR</th>
+                        <th>FORMA DE PAGO</th>
+                        <th style="text-align:right;">MONTO TOTAL</th>
+                        <th>ESTADO</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in compras %}
+                    <tr class="compra-row" data-detail-id="detail-{{ c.pk }}" style="cursor:pointer;">
+                        <td>{{ c.obra.nombre }}</td>
+                        <td>{{ c.rubro.nombre }}</td>
+                        <td>{{ c.subrubro.nombre }}</td>
+                        <td>{{ c.item }}</td>
+                        <td>{{ c.proveedor.nombre }}</td>
+                        <td>{{ c.get_forma_pago_display }}</td>
+                        <td style="text-align:right;">{{ c.monto_total|floatformat:2 }}</td>
+                        <td>
+                            <span class="pill">{{ c.get_estado_display }}</span>
+                            {% if c.es_subcontrato %}<span class="pill" style="background:#fef3c7; border-color:#f59e0b;">Subcontrato</span>{% endif %}
+                        </td>
+                        <td onclick="event.stopPropagation();">
+                            <a href="{% url 'compras:compra_edit' semana.pk c.pk %}" class="btn" style="padding:4px 8px; font-size:0.8rem; text-decoration:none;">Editar</a>
+                            <a href="{% url 'compras:compra_delete' semana.pk c.pk %}" class="btn" style="padding:4px 8px; font-size:0.8rem; color:var(--danger); text-decoration:none;">Eliminar</a>
+                        </td>
+                    </tr>
+                    <tr id="detail-{{ c.pk }}" class="compra-detail-row" style="display:none;">
+                        <td colspan="9" style="background:#f8fafc; padding:12px 16px; border-left:3px solid var(--accent);">
+                            <div class="compra-detail-grid">
+                                <span><strong>Nº PPTO/FC:</strong> {{ c.numero_ppto_fc|default:"-" }}</span>
+                                <span><strong>F. Factura:</strong> {{ c.fecha_factura|date:"d/m/Y"|default:"-" }}</span>
+                                <span><strong>Monto sin IVA:</strong> {{ c.monto_sin_iva|floatformat:2|default:"-" }}</span>
+                                <span><strong>IVA 21%:</strong> {{ c.iva_21|floatformat:2 }}</span>
+                                <span><strong>IVA 10,5%:</strong> {{ c.iva_105|floatformat:2 }}</span>
+                                <span><strong>PERC. IIBB:</strong> {{ c.perc_iibb|floatformat:2 }}</span>
+                                <span><strong>Monto a pagar:</strong> {{ c.monto_a_pagar|floatformat:2|default:"-" }}</span>
+                                <span><strong>% pago:</strong> {{ c.porcentaje_pago|floatformat:0|default:"-" }}%</span>
+                                {% if c.observaciones %}
+                                <span style="grid-column:1/-1;"><strong>Observaciones:</strong> {{ c.observaciones }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="font-size:0.9rem; color:var(--text-muted);">No hay compras en esta semana.</p>
+        <p style="margin-top:8px;"><a href="{% url 'compras:compra_add' semana.pk %}" class="btn btn-primary">+ Agregar compra</a></p>
+        {% endif %}
+    </section>
+</div>
+
+<style>
+.table-responsive { overflow-x: auto; }
+.compra-row:hover { background: #e2e8f0 !important; }
+.compra-detail-row td { border-top: none !important; }
+.compra-detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 24px; font-size: 0.85rem; }
+</style>
+<script>
+document.querySelectorAll('.compra-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+        var id = row.getAttribute('data-detail-id');
+        var detail = document.getElementById(id);
+        if (detail) detail.style.display = detail.style.display === 'none' ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

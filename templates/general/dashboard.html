@@ -6,27 +6,35 @@
     <header>
         <div class="title-block">
             <h1>Panel General</h1>
-            <p>Acceso a índices, tareas y presupuestos.</p>
+            <p>Secciones disponibles según tu acceso.</p>
         </div>
     </header>
 
     <section class="panel-cards">
-        <a href="{% url 'general:indice' %}" class="panel-card">
-            <h2>Índice</h2>
-            <p>Catálogos generales: rubros, subrubros, unidades, equipos, proveedores y más.</p>
+        {% if request.membership.is_admin or "presupuestos" in request.user_sections %}
+        <a href="{% url 'general:presupuesto' %}" class="panel-card">
+            <h2>Presupuestos</h2>
+            <p>Catálogos, tareas, presupuestos por obra y cotizaciones en dólar.</p>
         </a>
-        <a href="{% url 'tareas' %}" class="panel-card">
-            <h2>Tareas</h2>
-            <p>Recursos económicos: materiales, mano de obra, subcontratos, mezclas y lotes.</p>
+        {% endif %}
+        {% if "compras" in request.user_sections %}
+        <a href="{% url 'compras:compras_list' %}" class="panel-card">
+            <h2>Compras</h2>
+            <p>Órdenes de compra por obra y proveedor.</p>
         </a>
-        <a href="{% url 'presupuestos:presupuesto_list' %}" class="panel-card">
-            <h2>Presupuesto</h2>
-            <p>Construcción de presupuestos por proyecto. Obra, rubros, subrubros y tareas.</p>
+        {% endif %}
+        {% if "sueldos" in request.user_sections %}
+        <div class="panel-card panel-card-disabled">
+            <h2>Sueldos</h2>
+            <p>Próximamente.</p>
+        </div>
+        {% endif %}
+        {% if request.membership.is_admin %}
+        <a href="{% url 'general:member_list' %}" class="panel-card">
+            <h2>Usuarios y accesos</h2>
+            <p>Gestionar quién tiene acceso a cada sección de la empresa.</p>
         </a>
-        <a href="{% url 'general:tabla_dolar' %}" class="panel-card panel-card-dolar">
-            <h2>Tabla de Dólar</h2>
-            <p>Cotizaciones por fecha y tipo (Oficial, CCL, etc.).</p>
-        </a>
+        {% endif %}
     </section>
 </div>
 {% endblock %}

@@ -236,9 +236,21 @@ class TareaForm(forms.ModelForm):
             self.fields["rubro"].queryset = Rubro.objects.filter(
                 company=request.company
             )
-            self.fields["subrubro"].queryset = Subrubro.objects.filter(
-                company=request.company
-            )
+            # Subrubros solo del rubro seleccionado (instance o POST)
+            rubro_id = None
+            if kwargs.get("instance") and kwargs["instance"].rubro_id:
+                rubro_id = kwargs["instance"].rubro_id
+            elif args and args[0].get("rubro"):
+                try:
+                    rubro_id = int(args[0]["rubro"])
+                except (ValueError, TypeError):
+                    pass
+            if rubro_id:
+                self.fields["subrubro"].queryset = Subrubro.objects.filter(
+                    company=request.company, rubro_id=rubro_id
+                )
+            else:
+                self.fields["subrubro"].queryset = Subrubro.objects.none()
 
 
 class TareaRecursoForm(forms.Form):

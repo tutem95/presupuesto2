@@ -1,18 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Presupuesto · Presupuesto{% endblock %}
+{% block title %}Presupuestos · Sección{% endblock %}
 
 {% block content %}
 <div class="shell">
     <header>
         <div class="title-block">
-            <h1>Presupuesto</h1>
-            <p>Construcción de presupuestos por proyecto.</p>
+            <h1>Presupuestos</h1>
+            <p>Índice, tareas, presupuestos por obra y cotizaciones en dólar.</p>
         </div>
         <a href="{% url 'general:dashboard' %}" class="link-back">← Volver al panel</a>
     </header>
 
-    <section class="card">
-        <p style="color:var(--text-muted);">Esta sección estará disponible próximamente.</p>
+    <section class="panel-cards">
+        <a href="{% url 'general:indice' %}" class="panel-card">
+            <h2>Índice</h2>
+            <p>Catálogos generales: rubros, subrubros, obras, unidades, proveedores y más.</p>
+        </a>
+        <a href="{% url 'tareas' %}" class="panel-card">
+            <h2>Tareas</h2>
+            <p>Lotes de precios y Maestro Tareas.</p>
+        </a>
+        <a href="{% url 'presupuestos:presupuesto_list' %}" class="panel-card">
+            <h2>Presupuesto</h2>
+            <p>Presupuestos armados por obra e instancia.</p>
+        </a>
+        <a href="{% url 'general:tabla_dolar' %}" class="panel-card">
+            <h2>Tabla Dólar</h2>
+            <p>Cotizaciones del dólar por tipo y fecha.</p>
+        </a>
     </section>
 </div>
 {% endblock %}

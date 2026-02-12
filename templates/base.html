@@ -40,11 +40,27 @@
         {% block site_sidebar %}
         <aside class="site-sidebar">
             <nav class="sidebar-nav">
+                {% if request.membership %}
                 <a href="{% url 'general:dashboard' %}" class="sidebar-link">Panel</a>
-                <a href="{% url 'general:indice' %}" class="sidebar-link">Índice</a>
-                <a href="{% url 'tareas' %}" class="sidebar-link">Tareas</a>
-                <a href="{% url 'presupuestos:presupuesto_list' %}" class="sidebar-link">Presupuesto</a>
-                <a href="{% url 'general:tabla_dolar' %}" class="sidebar-link">Tabla Dólar</a>
+                {% if request.membership.is_admin or "presupuestos" in request.user_sections %}
+                <div class="sidebar-section">Presupuestos</div>
+                <a href="{% url 'general:indice' %}" class="sidebar-link sidebar-link-indent">Índice</a>
+                <a href="{% url 'tareas' %}" class="sidebar-link sidebar-link-indent">Tareas</a>
+                <a href="{% url 'presupuestos:presupuesto_list' %}" class="sidebar-link sidebar-link-indent">Presupuesto</a>
+                <a href="{% url 'general:tabla_dolar' %}" class="sidebar-link sidebar-link-indent">Tabla Dólar</a>
+                {% endif %}
+                {% if "compras" in request.user_sections %}
+                <div class="sidebar-section">Compras</div>
+                <a href="{% url 'compras:compras_list' %}" class="sidebar-link sidebar-link-indent">Compras</a>
+                {% endif %}
+                {% if "sueldos" in request.user_sections %}
+                <div class="sidebar-section">Sueldos</div>
+                <span class="sidebar-link sidebar-link-indent sidebar-muted">Próximamente</span>
+                {% endif %}
+                {% if request.membership.is_admin %}
+                <a href="{% url 'general:member_list' %}" class="sidebar-link">Usuarios y accesos</a>
+                {% endif %}
+                {% endif %}
             </nav>
         </aside>
         {% endblock %}

@@ -95,5 +95,10 @@ urlpatterns = [
     path("tipos-dolar/<int:pk>/eliminar/", views.tipo_dolar_delete, name="tipo_dolar_delete"),
     # Tabla de dólar
     path("tabla-dolar/", views.tabla_dolar, name="tabla_dolar"),
+    # Gestión de usuarios (solo admin)
+    path("miembros/", views.member_list, name="member_list"),
+    path("miembros/agregar/", views.member_add, name="member_add"),
+    path("miembros/<int:pk>/editar/", views.member_edit, name="member_edit"),
+    path("miembros/<int:pk>/quitar/", views.member_remove, name="member_remove"),
 ]
 
