@@ -24,10 +24,10 @@
         </a>
         {% endif %}
         {% if "sueldos" in request.user_sections %}
-        <div class="panel-card panel-card-disabled">
-            <h2>Sueldos</h2>
-            <p>Próximamente.</p>
-        </div>
+        <a href="{% url 'empleados:index' %}" class="panel-card">
+            <h2>Empleados</h2>
+            <p>Nómina y sueldos.</p>
+        </a>
         {% endif %}
         {% if request.membership.is_admin %}
         <a href="{% url 'general:member_list' %}" class="panel-card">

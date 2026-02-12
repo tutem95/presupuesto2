@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'recursos',
     'presupuestos',
     'compras',
+    'empleados',
     # Gestión de usuarios y autenticación UI
     'usuarios',
 ]

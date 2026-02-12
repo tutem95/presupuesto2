@@ -201,11 +201,18 @@ body {
 
 .site-footer {
     flex-shrink: 0;
+    width: 100%;
     padding: 12px 24px;
-    text-align: center;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
     font-size: 0.82rem;
     color: var(--text-muted);
     border-top: 1px solid var(--border);
+}
+
+.site-footer-text {
+    margin-left: auto;
 }
 
 /* Títulos en azul oscuro */

@@ -54,8 +54,8 @@
                 <a href="{% url 'compras:compras_list' %}" class="sidebar-link sidebar-link-indent">Compras</a>
                 {% endif %}
                 {% if "sueldos" in request.user_sections %}
-                <div class="sidebar-section">Sueldos</div>
-                <span class="sidebar-link sidebar-link-indent sidebar-muted">Próximamente</span>
+                <div class="sidebar-section">Empleados</div>
+                <a href="{% url 'empleados:index' %}" class="sidebar-link sidebar-link-indent">Empleados</a>
                 {% endif %}
                 {% if request.membership.is_admin %}
                 <a href="{% url 'general:member_list' %}" class="sidebar-link">Usuarios y accesos</a>
@@ -70,7 +70,7 @@
     </div>
     {% block site_footer %}
     <footer class="site-footer">
-        mamsys @ 2026
+        <span class="site-footer-text">mamsys @ 2026</span>
     </footer>
     {% endblock %}
     <script>

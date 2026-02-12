@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Empleados{% endblock %}
+
+{% block content %}
+<div class="shell">
+    <header>
+        <div class="title-block">
+            <h1>Empleados</h1>
+            <p>Nómina y sueldos.</p>
+        </div>
+        <a href="{% url 'general:dashboard' %}" class="link-back">← Volver</a>
+    </header>
+
+    <section class="panel-cards">
+        <a href="{% url 'empleados:nomina' %}" class="panel-card">
+            <h2>Nómina</h2>
+        </a>
+        <a href="{% url 'empleados:sueldos' %}" class="panel-card">
+            <h2>Sueldos</h2>
+        </a>
+    </section>
+</div>
+{% endblock %}
