@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Proveedores · Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Proveedores</h1>
+<p>Gestión de proveedores de materiales y servicios.</p>
+
+<p><a href="{% url 'general:dashboard' %}">← Volver al panel</a></p>
+
+<section>
+    <h2>{% if editing %}Editar proveedor{% else %}Nuevo proveedor{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+</section>
+
+<section>
+    <h2>Listado</h2>
+    {% if proveedores %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for proveedor in proveedores %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ proveedor.nombre }}</td>
+                    <td>{{ proveedor.telefono }}</td>
+                    <td>{{ proveedor.email }}</td>
+                    <td>
+                        <a href="{% url 'general:proveedor_edit' proveedor.pk %}">Editar</a>
+                        |
+                        <form action="{% url 'general:proveedor_delete' proveedor.pk %}" method="post" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('¿Eliminar este proveedor?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay proveedores cargados.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Categorías de material · Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Categorías de material</h1>
+<p>Agrupación fina de materiales dentro de cada tipo.</p>
+
+<p><a href="{% url 'general:dashboard' %}">← Volver al panel</a></p>
+
+<section>
+    <h2>{% if editing %}Editar categoría{% else %}Nueva categoría{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+</section>
+
+<section>
+    <h2>Listado</h2>
+    {% if categorias %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Tipo</th>
+                <th>Nombre</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for categoria in categorias %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ categoria.tipo.nombre }}</td>
+                    <td>{{ categoria.nombre }}</td>
+                    <td>
+                        <a href="{% url 'general:categoria_material_edit' categoria.pk %}">Editar</a>
+                        |
+                        <form action="{% url 'general:categoria_material_delete' categoria.pk %}" method="post" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('¿Eliminar esta categoría?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay categorías de material cargadas.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+

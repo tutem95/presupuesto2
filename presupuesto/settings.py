@@ -37,8 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Apps de dominio
     'general',
     'recursos',
+    # Gestión de usuarios y autenticación UI
+    'usuarios',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +59,8 @@ ROOT_URLCONF = 'presupuesto.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # Directorio global para templates del proyecto
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -104,9 +108,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+# Ajustado al contexto hispanohablante/Argentina
+LANGUAGE_CODE = 'es-ar'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Argentina/Buenos_Aires'
 
 USE_I18N = True
 
@@ -117,8 +122,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# Directorio para archivos estáticos de la aplicación (desarrollo)
+STATICFILES_DIRS = [BASE_DIR / 'static']
+# Directorio de recopilación para despliegue (collectstatic)
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Autenticación
+LOGIN_URL = 'usuarios:login'
+LOGIN_REDIRECT_URL = 'general:dashboard'
+LOGOUT_REDIRECT_URL = 'usuarios:login'

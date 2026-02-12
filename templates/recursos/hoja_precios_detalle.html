@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Hoja {{ hoja.nombre }} · Precios</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Hoja de precios: {{ hoja.nombre }}</h1>
+<p>
+    Creada: {{ hoja.creado_en }}<br>
+    Origen:
+    {% if hoja.origen %}
+        {{ hoja.origen.nombre }}
+    {% else %}
+        Precios actuales al momento de la creación
+    {% endif %}
+</p>
+
+<p><a href="{% url 'recursos:hoja_precios_list' %}">← Volver a hojas</a></p>
+
+<section>
+    <h2>Materiales y precios en esta hoja</h2>
+    {% if detalles %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Material</th>
+                <th>Cant. por unidad</th>
+                <th>Precio unidad venta</th>
+                <th>UA (precio análisis)</th>
+                <th>Moneda</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for d in detalles %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ d.material.nombre }}</td>
+                    <td>{{ d.cantidad_por_unidad_venta }}</td>
+                    <td>{{ d.precio_unidad_venta }}</td>
+                    <td>{{ d.precio_por_unidad_analisis|floatformat:2 }}</td>
+                    <td>{{ d.moneda }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay materiales registrados en esta hoja.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+

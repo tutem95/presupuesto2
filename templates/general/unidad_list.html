@@ -1,0 +1,58 @@
+{% comment %}Listado y alta de Unidades{% endcomment %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Unidades · Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Unidades</h1>
+<p>Definí las unidades de medida usadas en materiales, mano de obra y subcontratos.</p>
+
+<p><a href="{% url 'general:dashboard' %}">← Volver al panel</a></p>
+
+<section>
+    <h2>{% if editing %}Editar unidad{% else %}Nueva unidad{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+</section>
+
+<section>
+    <h2>Listado</h2>
+    {% if unidades %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for unidad in unidades %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ unidad.nombre }}</td>
+                    <td>
+                        <a href="{% url 'general:unidad_edit' unidad.pk %}">Editar</a>
+                        |
+                        <form action="{% url 'general:unidad_delete' unidad.pk %}" method="post" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('¿Eliminar esta unidad?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay unidades cargadas.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+

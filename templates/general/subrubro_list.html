@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Subrubros · Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Subrubros</h1>
+<p>Desglose de rubros en categorías más específicas.</p>
+
+<p><a href="{% url 'general:dashboard' %}">← Volver al panel</a></p>
+
+<section>
+    <h2>{% if editing %}Editar subrubro{% else %}Nuevo subrubro{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+</section>
+
+<section>
+    <h2>Listado</h2>
+    {% if subrubros %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Rubro</th>
+                <th>Nombre</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for subrubro in subrubros %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ subrubro.rubro.nombre }}</td>
+                    <td>{{ subrubro.nombre }}</td>
+                    <td>
+                        <a href="{% url 'general:subrubro_edit' subrubro.pk %}">Editar</a>
+                        |
+                        <form action="{% url 'general:subrubro_delete' subrubro.pk %}" method="post" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('¿Eliminar este subrubro?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay subrubros cargados.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+

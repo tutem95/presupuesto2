@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Hojas de precios · Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Hojas de precios</h1>
+<p>Crea “hojas” de precios para congelar el valor de los materiales en una fecha determinada.</p>
+
+<p><a href="{% url 'recursos:material_list' %}">← Volver a materiales</a></p>
+
+<section>
+    <h2>Nueva hoja</h2>
+    <form method="post">
+        {% csrf_token %}
+        <p>
+            <label>Nombre de la hoja:
+                <input type="text" name="nombre" placeholder="Ej: 01/01/2025">
+            </label>
+        </p>
+        <p>
+            <strong>Origen de datos:</strong><br>
+            <label>
+                <input type="radio" name="origen_tipo" value="actual" checked>
+                Copiar de precios actuales (tabla Material)
+            </label><br>
+            <label>
+                <input type="radio" name="origen_tipo" value="hoja">
+                Copiar de hoja existente:
+            </label>
+            <select name="origen_hoja">
+                <option value="">-- Elegir hoja --</option>
+                {% for h in hojas %}
+                    <option value="{{ h.pk }}">{{ h.nombre }}</option>
+                {% endfor %}
+            </select>
+        </p>
+        <button type="submit">Crear hoja</button>
+    </form>
+</section>
+
+<section>
+    <h2>Listado de hojas</h2>
+    {% if hojas %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Creada</th>
+                <th>Origen</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for hoja in hojas %}
+                <tr>
+                    <td>{{ hoja.nombre }}</td>
+                    <td>{{ hoja.creado_en }}</td>
+                    <td>{% if hoja.origen %}{{ hoja.origen.nombre }}{% else %}Precios actuales{% endif %}</td>
+                    <td><a href="{% url 'recursos:hoja_precios_detalle' hoja.pk %}">Ver detalle</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Todavía no hay hojas de precios.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+

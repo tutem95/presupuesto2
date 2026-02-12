@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tipos de material · Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Tipos de material</h1>
+<p>Clasificación macro de materiales (ej: Hormigón, Acero, Pinturas).</p>
+
+<p><a href="{% url 'general:dashboard' %}">← Volver al panel</a></p>
+
+<section>
+    <h2>{% if editing %}Editar tipo{% else %}Nuevo tipo{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+</section>
+
+<section>
+    <h2>Listado</h2>
+    {% if tipos %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for tipo in tipos %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ tipo.nombre }}</td>
+                    <td>
+                        <a href="{% url 'general:tipo_material_edit' tipo.pk %}">Editar</a>
+                        |
+                        <form action="{% url 'general:tipo_material_delete' tipo.pk %}" method="post" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('¿Eliminar este tipo de material?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay tipos de material cargados.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Subcontratos · Presupuesto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Subcontratos</h1>
+<p>Servicios y trabajos tercerizados con sus precios por unidad.</p>
+
+<p><a href="{% url 'general:dashboard' %}">← Volver al panel</a></p>
+
+<section>
+    <h2>{% if editing %}Editar subcontrato{% else %}Nuevo subcontrato{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+</section>
+
+<section>
+    <h2>Listado</h2>
+    {% if subcontratos %}
+        <table border="1" cellpadding="4">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Descripción</th>
+                <th>Proveedor</th>
+                <th>Unidad análisis</th>
+                <th>Precio por unidad</th>
+                <th>Moneda</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for s in subcontratos %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ s.descripcion }}</td>
+                    <td>{{ s.proveedor }}</td>
+                    <td>{{ s.unidad_de_analisis }}</td>
+                    <td>{{ s.precio_por_unidad }}</td>
+                    <td>{{ s.moneda }}</td>
+                    <td>
+                        <a href="{% url 'recursos:subcontrato_edit' s.pk %}">Editar</a>
+                        |
+                        <form action="{% url 'recursos:subcontrato_delete' s.pk %}" method="post" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('¿Eliminar este subcontrato?');">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No hay subcontratos cargados.</p>
+    {% endif %}
+</section>
+</body>
+</html>
+
