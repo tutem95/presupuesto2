@@ -29,7 +29,10 @@
                 </button>
                 <div class="user-dropdown-menu" id="user-dropdown-menu" role="menu" hidden>
                     {% if request.user.is_authenticated %}
-                    <a href="{% url 'usuarios:logout' %}" role="menuitem">Cerrar sesión</a>
+                    <form method="post" action="{% url 'usuarios:logout' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" role="menuitem" style="background:none;border:none;padding:8px 14px;font-size:0.9rem;color:var(--text);cursor:pointer;font-family:inherit;width:100%;text-align:left;">Cerrar sesión</button>
+                    </form>
                     {% endif %}
                 </div>
             </div>
@@ -43,11 +46,12 @@
                 {% if request.membership %}
                 <a href="{% url 'general:dashboard' %}" class="sidebar-link">Panel</a>
                 {% if request.membership.is_admin or "presupuestos" in request.user_sections %}
-                <div class="sidebar-section">Presupuestos</div>
+                <div class="sidebar-section">Catálogos</div>
                 <a href="{% url 'general:indice' %}" class="sidebar-link sidebar-link-indent">Índice</a>
+                <a href="{% url 'general:tabla_dolar' %}" class="sidebar-link sidebar-link-indent">Tabla Dólar</a>
+                <div class="sidebar-section">Presupuestos</div>
                 <a href="{% url 'tareas' %}" class="sidebar-link sidebar-link-indent">Tareas</a>
                 <a href="{% url 'presupuestos:presupuesto_list' %}" class="sidebar-link sidebar-link-indent">Presupuesto</a>
-                <a href="{% url 'general:tabla_dolar' %}" class="sidebar-link sidebar-link-indent">Tabla Dólar</a>
                 {% endif %}
                 {% if "compras" in request.user_sections %}
                 <div class="sidebar-section">Compras</div>
