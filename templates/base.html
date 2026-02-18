@@ -69,6 +69,17 @@
         </aside>
         {% endblock %}
         <main class="site-main">
+            {% if messages %}
+            <div class="shell" style="padding-top: 16px; padding-bottom: 0;">
+                <div class="messages-stack">
+                    {% for message in messages %}
+                    <div class="message {% if message.tags %}message-{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
             {% block content %}{% endblock %}
         </main>
     </div>

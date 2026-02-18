@@ -779,6 +779,41 @@ label {
     color: var(--danger);
 }
 
+.messages-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.message {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    padding: 10px 12px;
+    font-size: 0.88rem;
+}
+
+.message-success {
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.message-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: var(--danger);
+}
+
+.message-warning {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.message-info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
 /* Footer */
 footer {
     margin-top: 24px;

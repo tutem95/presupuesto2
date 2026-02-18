@@ -2,17 +2,65 @@
 Middleware multi-tenant: setea request.company y request.membership desde la sesión.
 Controla acceso por secciones (Presupuestos, Sueldos, Compras).
 """
+import logging
+
 from django.shortcuts import redirect
-from django.urls import resolve
+from django.urls import Resolver404, resolve
+
+logger = logging.getLogger(__name__)
+
+SECTION_NAMES = {
+    "presupuestos": "Presupuestos",
+    "sueldos": "Sueldos",
+    "compras": "Compras",
+}
+
+# Rutas que no requieren company (url_name con namespace si aplica)
+NO_COMPANY_URL_NAMES = {
+    "usuarios:login",
+    "usuarios:logout",
+    "usuarios:company_select",
+    "usuarios:no_company",
+    "no_section_access",
+}
+
+# Rutas que requieren is_admin (gestión de usuarios)
+ADMIN_ONLY_URL_NAMES = {
+    "general:member_list",
+    "general:member_add",
+    "general:member_edit",
+    "general:member_remove",
+}
+
+# Ruta pública para usuarios autenticados (sin sección específica)
+NO_SECTION_REQUIRED_URL_NAMES = {
+    "general:dashboard",
+}
+
+# Requisito de sección por namespace de URL
+SECTION_BY_NAMESPACE = {
+    "general": "presupuestos",
+    "recursos": "presupuestos",
+    "presupuestos": "presupuestos",
+    "compras": "compras",
+    "empleados": "sueldos",
+}
+
+# Rutas con nombre sin namespace (definidas en urls raíz)
+SECTION_BY_URL_NAME = {
+    "tareas": "presupuestos",
+}
 
 
 def get_user_membership(request):
     """Obtiene el membership activo (company + membership) del usuario."""
     if not request.user.is_authenticated:
         return None, None
+
     company_id = request.session.get("company_id")
     if not company_id:
         return None, None
+
     membership = (
         request.user.company_memberships.select_related("company")
         .prefetch_related("membership_sections__section")
@@ -24,62 +72,45 @@ def get_user_membership(request):
     return membership.company, membership
 
 
-# Rutas que no requieren company (url_name con namespace si aplica)
-NO_COMPANY_URL_NAMES = (
-    "usuarios:login",
-    "usuarios:logout",
-    "usuarios:company_select",
-    "usuarios:no_company",
-    "no_section_access",
-)
-
-# Rutas que requieren is_admin (gestión de usuarios)
-ADMIN_ONLY_URL_NAMES = (
-    "general:member_list",
-    "general:member_add",
-    "general:member_edit",
-    "general:member_remove",
-)
-
-# Prefijos de path que requieren sección presupuestos
-PRESUPUESTOS_PATH_PREFIXES = (
-    "/indice",
-    "/presupuesto",
-    "/obras",
-    "/rubros",
-    "/unidades",
-    "/tipos-material",
-    "/equipos",
-    "/categorias-material",
-    "/ref-equipos",
-    "/subrubros",
-    "/proveedores",
-    "/tipos-dolar",
-    "/tabla-dolar",
-    "/tareas",
-    "/recursos",
-    "/presupuestos",
-)
-
-
-def _path_requires_presupuestos(path):
-    """True si el path requiere acceso a sección Presupuestos."""
-    path = (path or "/").rstrip("/") or "/"
-    if path == "/":
-        return True
-    return any(path.startswith(p) for p in PRESUPUESTOS_PATH_PREFIXES)
-
-
-def _path_is_admin_only(path):
-    """True si el path es solo para admins."""
+def _resolve_route(path):
+    """Resuelve una ruta a (namespace, url_name, full_name), si existe."""
     try:
         match = resolve(path)
-        name = match.url_name
-        if match.namespace:
-            name = f"{match.namespace}:{name}"
-        return name in ADMIN_ONLY_URL_NAMES
+    except Resolver404:
+        return None, None, None
     except Exception:
-        return False
+        logger.exception("Error resolviendo ruta para permisos: %s", path)
+        return None, None, None
+
+    namespace = match.namespace or None
+    url_name = match.url_name or None
+    full_name = f"{namespace}:{url_name}" if namespace and url_name else url_name
+    return namespace, url_name, full_name
+
+
+def _required_section(namespace, url_name, full_name):
+    """Devuelve la sección requerida para la ruta actual."""
+    if full_name in NO_SECTION_REQUIRED_URL_NAMES:
+        return None
+    if full_name in NO_COMPANY_URL_NAMES:
+        return None
+    if url_name in SECTION_BY_URL_NAME:
+        return SECTION_BY_URL_NAME[url_name]
+    if namespace in SECTION_BY_NAMESPACE:
+        return SECTION_BY_NAMESPACE[namespace]
+    return None
+
+
+def _membership_sections(membership):
+    """Devuelve los códigos de sección del membership activo."""
+    if not membership:
+        return []
+    if membership.is_admin:
+        return list(SECTION_NAMES.keys())
+
+    # Usa prefetch de get_user_membership para evitar N+1.
+    section_codes = [ms.section.code for ms in membership.membership_sections.all()]
+    return list(dict.fromkeys(section_codes))
 
 
 class CompanyMiddleware:
@@ -101,50 +132,32 @@ class CompanyMiddleware:
             company, membership = get_user_membership(request)
             request.company = company
             request.membership = membership
+            request.user_sections = _membership_sections(membership)
+            request.user_sections_info = [
+                {"code": code, "nombre": SECTION_NAMES.get(code, code)}
+                for code in request.user_sections
+            ]
 
-            if membership:
-                request.user_sections = list(
-                    membership.membership_sections.values_list(
-                        "section__code", flat=True
-                    )
-                )
-                if membership.is_admin:
-                    request.user_sections = ["presupuestos", "sueldos", "compras"]
-                # Para templates: lista de {code, nombre}
-                SECTION_NAMES = {"presupuestos": "Presupuestos", "sueldos": "Sueldos", "compras": "Compras"}
-                request.user_sections_info = [
-                    {"code": c, "nombre": SECTION_NAMES.get(c, c)}
-                    for c in request.user_sections
-                ]
+            namespace, url_name, full_name = _resolve_route(request.path_info)
+
+            # Nunca interceptar el admin de Django.
+            if request.path.startswith("/admin/"):
+                return self.get_response(request)
 
             if request.company is None:
-                try:
-                    match = resolve(request.path_info)
-                    name = match.url_name
-                    if match.namespace:
-                        name = f"{match.namespace}:{name}"
-                    if name not in NO_COMPANY_URL_NAMES and not request.path.startswith("/admin/"):
-                        return redirect("usuarios:company_select")
-                except Exception:
-                    pass
-            elif request.membership and not request.path.startswith("/admin/"):
-                path = request.path
-                try:
-                    match = resolve(path)
-                    full_name = match.url_name
-                    if match.namespace:
-                        full_name = f"{match.namespace}:{full_name}"
-                except Exception:
-                    full_name = None
-
+                # Usuario autenticado pero sin empresa activa: solo se permiten rutas públicas.
                 if full_name not in NO_COMPANY_URL_NAMES:
-                    if _path_is_admin_only(path):
-                        if not request.membership.is_admin:
-                            return redirect("no_section_access")
-                    elif _path_requires_presupuestos(path):
-                        if not request.membership.has_section_access("presupuestos"):
-                            return redirect("no_section_access")
-                    # sueldos y compras se verifican cuando existan esas URLs
+                    return redirect("usuarios:company_select")
+            elif request.membership:
+                # Con empresa activa: validar rol admin y sección.
+                if full_name in ADMIN_ONLY_URL_NAMES and not request.membership.is_admin:
+                    return redirect("no_section_access")
+
+                required_section = _required_section(namespace, url_name, full_name)
+                if required_section and not request.membership.has_section_access(
+                    required_section
+                ):
+                    return redirect("no_section_access")
 
         response = self.get_response(request)
         return response

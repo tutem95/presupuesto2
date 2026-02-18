@@ -1,21 +1,30 @@
+import logging
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from general.models import CategoriaMaterial, TipoMaterial
+from general.models import CategoriaMaterial
+
+logger = logging.getLogger(__name__)
 
 
 def _categorias_por_tipo(company):
     """Dict tipo_pk -> [{id, nombre}, ...] para filtrar categorías por tipo en el form de material."""
     result = {}
-    for t in TipoMaterial.objects.filter(company=company).order_by("nombre"):
-        result[str(t.pk)] = [
-            {"id": c.pk, "nombre": c.nombre}
-            for c in CategoriaMaterial.objects.filter(company=company, tipo=t).order_by("nombre")
-        ]
+    categorias = CategoriaMaterial.objects.filter(company=company).order_by(
+        "tipo__nombre",
+        "nombre",
+    ).values("tipo_id", "id", "nombre")
+    for cat in categorias:
+        tipo_id = str(cat["tipo_id"])
+        if tipo_id not in result:
+            result[tipo_id] = []
+        result[tipo_id].append({"id": cat["id"], "nombre": cat["nombre"]})
     return result
 
 
@@ -989,50 +998,75 @@ def lote_create(request):
         if not nombre:
             return redirect("recursos:lote_create")
 
-        hoja_mat_origen = None
-        hoja_mo_origen = None
-        hoja_sub_origen = None
-        hoja_mezclas_origen = None
-        lote_maestro_origen = None
+        try:
+            with transaction.atomic():
+                hoja_mat_origen = None
+                hoja_mo_origen = None
+                hoja_sub_origen = None
+                hoja_mezclas_origen = None
+                lote_maestro_origen = None
 
-        if origen_mat:
-            lote_mat = get_object_or_404(Lote, pk=origen_mat, company=company)
-            hoja_mat_origen = lote_mat.hoja_materiales
-        if origen_mo:
-            lote_mo = get_object_or_404(Lote, pk=origen_mo, company=company)
-            hoja_mo_origen = lote_mo.hoja_mano_de_obra
-        if origen_sub:
-            lote_sub = get_object_or_404(Lote, pk=origen_sub, company=company)
-            hoja_sub_origen = lote_sub.hoja_subcontratos
-        if origen_mezclas:
-            lote_mez = get_object_or_404(Lote, pk=origen_mezclas, company=company)
-            hoja_mezclas_origen = lote_mez.hoja_materiales
-        if origen_maestro:
-            lote_maestro_origen = get_object_or_404(Lote, pk=origen_maestro, company=company)
+                if origen_mat:
+                    lote_mat = get_object_or_404(Lote, pk=origen_mat, company=company)
+                    hoja_mat_origen = lote_mat.hoja_materiales
+                if origen_mo:
+                    lote_mo = get_object_or_404(Lote, pk=origen_mo, company=company)
+                    hoja_mo_origen = lote_mo.hoja_mano_de_obra
+                if origen_sub:
+                    lote_sub = get_object_or_404(Lote, pk=origen_sub, company=company)
+                    hoja_sub_origen = lote_sub.hoja_subcontratos
+                if origen_mezclas:
+                    lote_mez = get_object_or_404(
+                        Lote, pk=origen_mezclas, company=company
+                    )
+                    hoja_mezclas_origen = lote_mez.hoja_materiales
+                if origen_maestro:
+                    lote_maestro_origen = get_object_or_404(
+                        Lote, pk=origen_maestro, company=company
+                    )
 
-        if hoja_mat_origen:
-            hoja_mat = _copy_hoja_materiales_desde_origen(hoja_mat_origen, nombre, company)
-        else:
-            hoja_mat = _create_hoja_materiales_vacia(nombre, company)
-        if hoja_mo_origen:
-            hoja_mo = _copy_hoja_mo_desde_origen(hoja_mo_origen, nombre, company)
-        else:
-            hoja_mo = _create_hoja_mo_vacia(nombre, company)
-        if hoja_sub_origen:
-            hoja_sub = _copy_hoja_subcontratos_desde_origen(hoja_sub_origen, nombre, company)
-        else:
-            hoja_sub = _create_hoja_subcontratos_vacia(nombre, company)
+                if hoja_mat_origen:
+                    hoja_mat = _copy_hoja_materiales_desde_origen(
+                        hoja_mat_origen,
+                        nombre,
+                        company,
+                    )
+                else:
+                    hoja_mat = _create_hoja_materiales_vacia(nombre, company)
+                if hoja_mo_origen:
+                    hoja_mo = _copy_hoja_mo_desde_origen(hoja_mo_origen, nombre, company)
+                else:
+                    hoja_mo = _create_hoja_mo_vacia(nombre, company)
+                if hoja_sub_origen:
+                    hoja_sub = _copy_hoja_subcontratos_desde_origen(
+                        hoja_sub_origen,
+                        nombre,
+                        company,
+                    )
+                else:
+                    hoja_sub = _create_hoja_subcontratos_vacia(nombre, company)
 
-        _copy_mezclas_desde_hoja(hoja_mezclas_origen, hoja_mat, company)
+                _copy_mezclas_desde_hoja(hoja_mezclas_origen, hoja_mat, company)
 
-        lote_nuevo = Lote.objects.create(
-            nombre=nombre,
-            company=company,
-            hoja_materiales=hoja_mat,
-            hoja_mano_de_obra=hoja_mo,
-            hoja_subcontratos=hoja_sub,
-        )
-        _copy_tareas_desde_lote(lote_maestro_origen, lote_nuevo, company)
+                lote_nuevo = Lote.objects.create(
+                    nombre=nombre,
+                    company=company,
+                    hoja_materiales=hoja_mat,
+                    hoja_mano_de_obra=hoja_mo,
+                    hoja_subcontratos=hoja_sub,
+                )
+                _copy_tareas_desde_lote(lote_maestro_origen, lote_nuevo, company)
+        except Exception:
+            logger.exception(
+                "Error creando lote '%s' para company_id=%s",
+                nombre,
+                getattr(company, "pk", None),
+            )
+            messages.error(
+                request,
+                "No se pudo crear el lote. Revisá los datos de origen y volvé a intentar.",
+            )
+            return redirect("recursos:lote_create")
 
         return redirect("tareas")
 
@@ -1071,7 +1105,11 @@ def lote_detalle(request, pk):
                 tipo_pk = int(tipo_id)
                 if tipos_dolar.filter(pk=tipo_pk).exists():
                     lote.tipo_dolar_id = tipo_pk
-                # si no existe en la empresa, no se cambia
+                else:
+                    messages.error(
+                        request,
+                        "El tipo de dólar seleccionado no pertenece a la empresa activa.",
+                    )
             else:
                 lote.tipo_dolar_id = None
             if fecha_str:
@@ -1080,7 +1118,10 @@ def lote_detalle(request, pk):
                 lote.fecha_dolar = None
             lote.save()
         except (ValueError, TypeError):
-            pass
+            messages.error(
+                request,
+                "La fecha de cotización no es válida. Usá el formato correcto.",
+            )
         return redirect("recursos:lote_detalle", pk=lote.pk)
 
     return render(

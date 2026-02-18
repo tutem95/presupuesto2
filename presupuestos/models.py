@@ -2,8 +2,8 @@ from decimal import Decimal
 
 from django.db import models
 
-from general.models import Company, Obra, TipoDolar
-from recursos.models import CotizacionDolar, Lote, Tarea
+from general.models import Company, CotizacionDolar, Obra, TipoDolar
+from recursos.models import Lote, Tarea
 
 
 class Presupuesto(models.Model):

@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
@@ -5,6 +6,34 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from general.models import CompanyMembership
+
+
+SECTION_LANDING_ROUTES = (
+    ("presupuestos", "general:dashboard"),
+    ("compras", "compras:compras_list"),
+    ("sueldos", "empleados:index"),
+)
+
+
+def _membership_section_codes(membership):
+    if not membership:
+        return []
+    if membership.is_admin:
+        return [code for code, _ in SECTION_LANDING_ROUTES]
+    return [ms.section.code for ms in membership.membership_sections.all()]
+
+
+def _membership_has_any_access(membership):
+    return bool(_membership_section_codes(membership))
+
+
+def _landing_url_for_membership(membership):
+    """Devuelve la home según secciones habilitadas en el membership."""
+    section_codes = set(_membership_section_codes(membership))
+    for section_code, route_name in SECTION_LANDING_ROUTES:
+        if section_code in section_codes:
+            return reverse(route_name)
+    return reverse("usuarios:no_company")
 
 
 class LoginView(auth_views.LoginView):
@@ -18,16 +47,20 @@ class LoginView(auth_views.LoginView):
     template_name = "usuarios/login.html"
 
     def get_success_url(self):
-        companies = list(
+        memberships = list(
             CompanyMembership.objects.filter(user=self.request.user)
             .select_related("company")
-            .values_list("company_id", "company__nombre")
+            .prefetch_related("membership_sections__section")
+            .order_by("company__nombre")
         )
-        if not companies:
+        valid_memberships = [m for m in memberships if _membership_has_any_access(m)]
+
+        if not valid_memberships:
             return reverse("usuarios:no_company")
-        if len(companies) == 1:
-            self.request.session["company_id"] = companies[0][0]
-            return reverse("general:dashboard")
+        if len(valid_memberships) == 1:
+            membership = valid_memberships[0]
+            self.request.session["company_id"] = membership.company_id
+            return _landing_url_for_membership(membership)
         return reverse("usuarios:company_select")
 
 
@@ -44,20 +77,21 @@ def company_select(request):
         .order_by("company__nombre")
     )
     # Solo empresas donde tiene acceso (admin o al menos una sección)
-    memberships = [m for m in memberships_qs if m.is_admin or m.membership_sections.exists()]
+    memberships = [m for m in memberships_qs if _membership_has_any_access(m)]
 
     if not memberships:
         return redirect("usuarios:no_company")
 
     if request.method == "POST":
         company_id = request.POST.get("company_id")
-        valid_ids = [m.company_id for m in memberships]
-        try:
-            if company_id and int(company_id) in valid_ids:
-                request.session["company_id"] = int(company_id)
-                return redirect("general:dashboard")
-        except (ValueError, TypeError):
-            pass
+        selected_membership = next(
+            (m for m in memberships if str(m.company_id) == str(company_id)),
+            None,
+        )
+        if selected_membership:
+            request.session["company_id"] = selected_membership.company_id
+            return redirect(_landing_url_for_membership(selected_membership))
+        messages.error(request, "La empresa seleccionada no es válida para tu usuario.")
 
     return render(
         request,

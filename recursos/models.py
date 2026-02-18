@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from general.models import (
@@ -119,6 +120,44 @@ class ManoDeObra(models.Model):
     )
     precio_unidad_venta = models.DecimalField(max_digits=12, decimal_places=4)
 
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        if (
+            self.rubro_id
+            and self.subrubro_id
+            and self.subrubro.rubro_id != self.rubro_id
+        ):
+            errors["subrubro"] = "El subrubro seleccionado no pertenece al rubro indicado."
+
+        if (
+            self.equipo_id
+            and self.ref_equipo_id
+            and self.ref_equipo.equipo_id != self.equipo_id
+        ):
+            errors["ref_equipo"] = "La referencia de equipo no pertenece al equipo indicado."
+
+        if self.company_id:
+            company_id = self.company_id
+            if self.rubro_id and self.rubro.company_id != company_id:
+                errors["rubro"] = "El rubro no pertenece a la empresa seleccionada."
+            if self.subrubro_id and self.subrubro.company_id != company_id:
+                errors["subrubro"] = "El subrubro no pertenece a la empresa seleccionada."
+            if self.equipo_id and self.equipo.company_id != company_id:
+                errors["equipo"] = "El equipo no pertenece a la empresa seleccionada."
+            if self.ref_equipo_id and self.ref_equipo.company_id != company_id:
+                errors["ref_equipo"] = (
+                    "La referencia de equipo no pertenece a la empresa seleccionada."
+                )
+            if self.unidad_de_venta_id and self.unidad_de_venta.company_id != company_id:
+                errors["unidad_de_venta"] = (
+                    "La unidad de venta no pertenece a la empresa seleccionada."
+                )
+
+        if errors:
+            raise ValidationError(errors)
+
     class Meta:
         verbose_name = "Mano de Obra"
         verbose_name_plural = "Mano de Obra"
@@ -179,6 +218,33 @@ class Subcontrato(models.Model):
     )
     precio_unidad_venta = models.DecimalField(max_digits=12, decimal_places=4)
     moneda = models.CharField(max_length=3, choices=MONEDA_CHOICES, default="ARS")
+
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        if (
+            self.rubro_id
+            and self.subrubro_id
+            and self.subrubro.rubro_id != self.rubro_id
+        ):
+            errors["subrubro"] = "El subrubro seleccionado no pertenece al rubro indicado."
+
+        if self.company_id:
+            company_id = self.company_id
+            if self.rubro_id and self.rubro.company_id != company_id:
+                errors["rubro"] = "El rubro no pertenece a la empresa seleccionada."
+            if self.subrubro_id and self.subrubro.company_id != company_id:
+                errors["subrubro"] = "El subrubro no pertenece a la empresa seleccionada."
+            if self.proveedor_id and self.proveedor.company_id != company_id:
+                errors["proveedor"] = "El proveedor no pertenece a la empresa seleccionada."
+            if self.unidad_de_venta_id and self.unidad_de_venta.company_id != company_id:
+                errors["unidad_de_venta"] = (
+                    "La unidad de venta no pertenece a la empresa seleccionada."
+                )
+
+        if errors:
+            raise ValidationError(errors)
 
     class Meta:
         verbose_name = "Subcontrato"
@@ -577,6 +643,29 @@ class Tarea(models.Model):
         related_name="tareas",
     )
 
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        if (
+            self.rubro_id
+            and self.subrubro_id
+            and self.subrubro.rubro_id != self.rubro_id
+        ):
+            errors["subrubro"] = "El subrubro seleccionado no pertenece al rubro indicado."
+
+        if self.company_id:
+            company_id = self.company_id
+            if self.rubro_id and self.rubro.company_id != company_id:
+                errors["rubro"] = "El rubro no pertenece a la empresa seleccionada."
+            if self.subrubro_id and self.subrubro.company_id != company_id:
+                errors["subrubro"] = "El subrubro no pertenece a la empresa seleccionada."
+            if self.lote_id and self.lote.company_id != company_id:
+                errors["lote"] = "El lote no pertenece a la empresa seleccionada."
+
+        if errors:
+            raise ValidationError(errors)
+
     class Meta:
         verbose_name = "Tarea"
         verbose_name_plural = "Maestro Tareas"
@@ -699,6 +788,81 @@ class TareaRecurso(models.Model):
     class Meta:
         verbose_name = "Recurso en Tarea"
         verbose_name_plural = "Recursos en Tarea"
+        constraints = [
+            models.CheckConstraint(
+                name="tarea_recurso_exactly_one_resource",
+                condition=(
+                    (
+                        models.Q(material__isnull=False)
+                        & models.Q(mano_de_obra__isnull=True)
+                        & models.Q(subcontrato__isnull=True)
+                        & models.Q(mezcla__isnull=True)
+                    )
+                    | (
+                        models.Q(material__isnull=True)
+                        & models.Q(mano_de_obra__isnull=False)
+                        & models.Q(subcontrato__isnull=True)
+                        & models.Q(mezcla__isnull=True)
+                    )
+                    | (
+                        models.Q(material__isnull=True)
+                        & models.Q(mano_de_obra__isnull=True)
+                        & models.Q(subcontrato__isnull=False)
+                        & models.Q(mezcla__isnull=True)
+                    )
+                    | (
+                        models.Q(material__isnull=True)
+                        & models.Q(mano_de_obra__isnull=True)
+                        & models.Q(subcontrato__isnull=True)
+                        & models.Q(mezcla__isnull=False)
+                    )
+                ),
+            ),
+            models.CheckConstraint(
+                name="tarea_recurso_cantidad_gt_zero",
+                condition=models.Q(cantidad__gt=0),
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        selected_resources = sum(
+            bool(resource_id)
+            for resource_id in (
+                self.material_id,
+                self.mano_de_obra_id,
+                self.subcontrato_id,
+                self.mezcla_id,
+            )
+        )
+        if selected_resources != 1:
+            errors["__all__"] = (
+                "Debés seleccionar exactamente un recurso: material, mano de obra, "
+                "subcontrato o mezcla."
+            )
+
+        if self.cantidad is not None and self.cantidad <= 0:
+            errors["cantidad"] = "La cantidad debe ser mayor que cero."
+
+        if self.tarea_id:
+            company_id = self.tarea.company_id
+            if self.material_id and self.material.company_id != company_id:
+                errors["material"] = "El material no pertenece a la empresa de la tarea."
+            if self.mano_de_obra_id and self.mano_de_obra.company_id != company_id:
+                errors["mano_de_obra"] = (
+                    "La mano de obra no pertenece a la empresa de la tarea."
+                )
+            if self.subcontrato_id and self.subcontrato.company_id != company_id:
+                errors["subcontrato"] = (
+                    "El subcontrato no pertenece a la empresa de la tarea."
+                )
+            if self.mezcla_id and self.mezcla.company_id != company_id:
+                errors["mezcla"] = "La mezcla no pertenece a la empresa de la tarea."
+
+        if errors:
+            raise ValidationError(errors)
 
     def get_recurso(self):
         if self.material_id:

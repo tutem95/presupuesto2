@@ -1,5 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -653,29 +654,48 @@ def tabla_dolar(request):
     tipos = TipoDolar.objects.filter(company=company).order_by("nombre")
 
     if request.method == "POST":
-        fecha_str = request.POST.get("fecha")
-        if fecha_str:
-            from datetime import datetime
-            try:
-                fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
-                for tipo in tipos:
-                    val = request.POST.get(f"tipo_{tipo.pk}")
-                    if val is not None and val.strip() != "":
-                        try:
-                            valor = Decimal(val.strip().replace(",", "."))
-                            CotizacionDolar.objects.update_or_create(
-                                company=company,
-                                fecha=fecha,
-                                tipo=tipo,
-                                defaults={"valor": valor},
-                            )
-                        except (ValueError, InvalidOperation):
-                            pass
-                return redirect("general:tabla_dolar")
-            except ValueError:
-                pass
+        fecha_str = (request.POST.get("fecha") or "").strip()
+        if not fecha_str:
+            messages.error(request, "Debés indicar una fecha para guardar cotizaciones.")
+            return redirect("general:tabla_dolar")
 
-    from django.db.models import Min
+        from datetime import datetime
+
+        try:
+            fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(request, "La fecha ingresada no es válida.")
+            return redirect("general:tabla_dolar")
+
+        tipos_invalidos = []
+        guardados = 0
+        for tipo in tipos:
+            val = request.POST.get(f"tipo_{tipo.pk}")
+            if val is None or val.strip() == "":
+                continue
+            try:
+                valor = Decimal(val.strip().replace(",", "."))
+                CotizacionDolar.objects.update_or_create(
+                    company=company,
+                    fecha=fecha,
+                    tipo=tipo,
+                    defaults={"valor": valor},
+                )
+                guardados += 1
+            except (ValueError, InvalidOperation):
+                tipos_invalidos.append(tipo.nombre)
+
+        if tipos_invalidos:
+            messages.warning(
+                request,
+                "No se pudieron guardar valores inválidos para: "
+                + ", ".join(tipos_invalidos),
+            )
+        if guardados == 0 and not tipos_invalidos:
+            messages.info(request, "No se ingresaron valores para guardar.")
+
+        return redirect("general:tabla_dolar")
+
     fechas = CotizacionDolar.objects.filter(company=company).values_list(
         "fecha", flat=True
     ).distinct().order_by("-fecha")[:200]  # últimas 200 fechas

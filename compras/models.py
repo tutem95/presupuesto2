@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from general.models import Company, Obra, Proveedor, Rubro, Subrubro
 
@@ -141,6 +142,35 @@ class Compra(models.Model):
         verbose_name = "Compra"
         verbose_name_plural = "Compras"
         ordering = ["obra__nombre", "rubro__nombre", "subrubro__nombre"]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        if (
+            self.rubro_id
+            and self.subrubro_id
+            and self.subrubro.rubro_id != self.rubro_id
+        ):
+            errors["subrubro"] = "El subrubro seleccionado no pertenece al rubro indicado."
+
+        if self.semana_id:
+            company_id = self.semana.company_id
+            if self.obra_id and self.obra.company_id != company_id:
+                errors["obra"] = "La obra no pertenece a la empresa de la semana seleccionada."
+            if self.rubro_id and self.rubro.company_id != company_id:
+                errors["rubro"] = "El rubro no pertenece a la empresa de la semana seleccionada."
+            if self.subrubro_id and self.subrubro.company_id != company_id:
+                errors["subrubro"] = (
+                    "El subrubro no pertenece a la empresa de la semana seleccionada."
+                )
+            if self.proveedor_id and self.proveedor.company_id != company_id:
+                errors["proveedor"] = (
+                    "El proveedor no pertenece a la empresa de la semana seleccionada."
+                )
+
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
         return f"{self.obra.nombre} - {self.item} ({self.proveedor.nombre})"
